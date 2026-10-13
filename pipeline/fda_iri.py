@@ -124,9 +124,95 @@ def firm(fei):
     return _inst("fda-compliance-kg", "firm", slug(fei))
 
 
+# ---- fda-drug-biologic-kg ------------------------------------------------
+_APPL = re.compile(r"^(NDA|ANDA|BLA|BL|BA|BN)\s*0*(\d+)(?:/.*)?$", re.I)
+_PREFIX_FIX = {"BL": "BLA"}
+
+
+def normalize_application(number=None, app_type=None):
+    """Canonical application number. Drugs@FDA writes 'NDA021234' or 'ANDA076803';
+    the Orange Book writes '020512' with application_type 'N' or 'A'; NSDE and CRLs
+    sometimes add spaces. Returns e.g. 'NDA021234', or None if not an application."""
+    if number is None:
+        return None
+    s = re.sub(r"\s+", "", str(number)).upper()
+    m = _APPL.match(s)
+    if m:
+        prefix = m.group(1).upper()
+        return f"{_PREFIX_FIX.get(prefix, prefix)}{int(m.group(2)):06d}"
+    if s.isdigit() and app_type:
+        prefix = {"N": "NDA", "A": "ANDA", "B": "BLA"}.get(str(app_type).upper()[:1])
+        return f"{prefix}{int(s):06d}" if prefix else None
+    return None
+
+
+def application(number, app_type=None):
+    """Drug or biologic application (NDA, ANDA, BLA): the hub of the drug graph.
+    application('NDA021234') -> .../fda-drug-biologic-kg/id/application/nda021234
+    application('020512', 'A') -> .../application/anda020512"""
+    canon = normalize_application(number, app_type)
+    if not canon:
+        raise ValueError(f"not an application number: {number!r}")
+    return _inst("fda-drug-biologic-kg", "application", slug(canon))
+
+
+def application_product(number, product_number, app_type=None):
+    """A product within an application (Drugs@FDA products, Orange Book rows).
+    application_product('ANDA020512', '001') -> .../application/anda020512/product/001"""
+    return application(number, app_type) + "/product/" + slug(product_number)
+
+
+def ndc_product(product_id):
+    """NDC Directory product, keyed on openFDA's product_id (product_ndc + SPL id),
+    the only key that is unique across the directory. Kept verbatim.
+    ndc_product('71558-001_43046e5b-...') -> .../ndc-product/71558-001_43046e5b-..."""
+    return _inst("fda-drug-biologic-kg", "ndc-product", _verbatim(product_id))
+
+
+def ndc_package(package_ndc):
+    """A package NDC, shared by the NDC Directory packaging list, NSDE and shortages.
+    ndc_package('71558-001-30') -> .../fda-drug-biologic-kg/id/ndc-package/71558_001_30"""
+    return _inst("fda-drug-biologic-kg", "ndc-package", slug(package_ndc))
+
+
+def hashed(graph, kind, record):
+    """Deterministic IRI for a record that has no natural key (drug shortages,
+    complete response letters, historical documents): SHA-1 of the record's
+    canonical JSON. Same record, same IRI, on every rebuild."""
+    import hashlib
+    import json
+    h = hashlib.sha1(json.dumps(record, sort_keys=True, separators=(",", ":"),
+                                ensure_ascii=True, default=str).encode()).hexdigest()
+    return _inst(graph, kind, h[:20])
+
+
+# ---- fda-food-cosmetic-kg, fda-animal-health-kg, fda-tobacco-kg ----------
+def caers_report(report_number):
+    """CAERS adverse event report (food, dietary supplement).
+    caers_report('102855') -> .../fda-food-cosmetic-kg/id/caers-report/102855"""
+    return _inst("fda-food-cosmetic-kg", "caers-report", slug(report_number))
+
+
+def cosmetic_event(report_number):
+    """Cosmetic adverse event report. cosmetic_event('24502668') -> .../cosmetic-event/24502668"""
+    return _inst("fda-food-cosmetic-kg", "cosmetic-event", slug(report_number))
+
+
+def animal_event(unique_aer_id):
+    """Animal adverse event report, keyed on unique_aer_id_number.
+    animal_event('USA-USFDACVM-2015-US-048928') -> .../animal-event/usa_usfdacvm_2015_us_048928"""
+    return _inst("fda-animal-health-kg", "animal-event", slug(unique_aer_id))
+
+
+def tobacco_problem(report_id):
+    """Tobacco product problem report. tobacco_problem(307) -> .../tobacco-problem/307"""
+    return _inst("fda-tobacco-kg", "tobacco-problem", slug(report_id))
+
+
 def _selftest():
     S = "https://bmedesign.org/fda-substance-kg/id/"
     C = "https://bmedesign.org/fda-compliance-kg/id/"
+    D = "https://bmedesign.org/fda-drug-biologic-kg/id/"
     cases = {
         substance("S8B49CX5KM"): S + "unii/s8b49cx5km",
         recall("D-0862-2026"): C + "recall/d_0862_2026",
@@ -141,7 +227,27 @@ def _selftest():
         substance_ref(None, "c088fcc5"): S + "gsrs/c088fcc5",
         child(substance("174R2IG4T0"), "codes", "fceb859d-ac96"):
             S + "unii/174r2ig4t0/codes/fceb859d-ac96",
+        application("NDA021234"): D + "application/nda021234",
+        application("ANDA 076803"): D + "application/anda076803",
+        application("020512", "A"): D + "application/anda020512",
+        application("BLA125057"): D + "application/bla125057",
+        application_product("020512", "001", "A"): D + "application/anda020512/product/001",
+        ndc_product("71558-001_43046e5b-e40b"): D + "ndc-product/71558-001_43046e5b-e40b",
+        ndc_package("71558-001-30"): D + "ndc-package/71558_001_30",
+        caers_report("102855"): "https://bmedesign.org/fda-food-cosmetic-kg/id/caers-report/102855",
+        cosmetic_event("24502668"): "https://bmedesign.org/fda-food-cosmetic-kg/id/cosmetic-event/24502668",
+        animal_event("USA-USFDACVM-2015-US-048928"):
+            "https://bmedesign.org/fda-animal-health-kg/id/animal-event/usa_usfdacvm_2015_us_048928",
+        tobacco_problem(307): "https://bmedesign.org/fda-tobacco-kg/id/tobacco-problem/307",
     }
+    assert normalize_application("nda 21234") == "NDA021234"
+    assert normalize_application("BL 125522") == "BLA125522"
+    assert normalize_application("NDA 210933/Original 1") == "NDA210933"
+    assert normalize_application("NDA 21234/S-012") == "NDA021234"
+    assert normalize_application("citation 21 CFR 331") is None
+    h1 = hashed("fda-drug-biologic-kg", "shortage", {"a": 1, "b": [2, 3]})
+    assert h1 == hashed("fda-drug-biologic-kg", "shortage", {"b": [2, 3], "a": 1})
+    assert h1.startswith(D + "shortage/") and len(h1.rsplit("/", 1)[1]) == 20
     for got, want in cases.items():
         assert got == want, f"MINT DRIFT: {got} != {want}"
     assert term("fda-compliance-kg", "Recall") == \
