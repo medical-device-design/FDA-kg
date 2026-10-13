@@ -1,0 +1,14 @@
+# raw data and build outputs never go in git
+raw/
+work/
+out/
+*.ttl
+*.json.zip
+*.zip
+*.log
+# credentials
+*.env
+*lakectl*.yaml
+.lakectl.yaml
+__pycache__/
+*.pyc
