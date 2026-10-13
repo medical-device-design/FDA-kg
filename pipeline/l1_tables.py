@@ -49,11 +49,16 @@ def clean(row):
 
 
 def app(no, typ=None):
-    return fda_iri.application(no, typ)
+    """Application IRI; when the type is unknown (ApplNo missing from
+    Applications.txt) fall back to the untyped IRI instead of dropping the row."""
+    try:
+        return fda_iri.application(no, typ)
+    except ValueError:
+        return fda_iri.application_untyped(no)
 
 
 def app_product(no, prod, typ=None):
-    return fda_iri.application_product(no, prod, typ)
+    return app(no, typ) + "/product/" + fda_iri.slug(prod)
 
 
 def submission(no, typ, stype, sno):
@@ -233,35 +238,53 @@ def convert_orangebook(snap, out_path, stamp):
 
 
 def convert_purplebook(snap, out_path, stamp):
-    """Each monthly CSV is a change report (N new, R added in release, U updated).
-    Every row is kept as a PurpleBookChange under its BLA; reconstructing the
-    current list from the change history is an L2 step."""
+    """Each monthly CSV has two sections, each with its own 'N/R/U,' header:
+      1. the month's changes (N new, R added in release, U updated) -> PurpleBookChange,
+         kept for every month;
+      2. 'Purple Book Database Extract', the full current list -> PurpleBookProduct,
+         taken from the LATEST month only (older extracts stay in the raw snapshot)."""
     o = Out(out_path, D, "PbFile",
             {"Approval Date", "Inter. Approval Date", "Date of First Licensure", "Exclusivity Expiration Date",
              "First Interchangeable Exclusivity Exp. Date", "Ref. Product Exclusivity Exp. Date",
              "Orphan Exclusivity Exp. Date"}, stamp, "fda/purple-book-monthly")
-    for f in sorted(snap.glob("*.csv")):
-        text = f.read_text(encoding="utf-8-sig", errors="replace")
-        lines = text.splitlines()
-        hdr = next((i for i, ln in enumerate(lines) if ln.startswith("N/R/U,")), None)
-        if hdr is None:
-            continue
+    files = sorted(snap.glob("*.csv"))
+    latest = files[-1] if files else None
+    for f in files:
+        lines = f.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+        heads = [i for i, ln in enumerate(lines) if ln.startswith("N/R/U,")]
         month = f.stem
-        for i, r in enumerate(read_table("\n".join(lines[hdr:]), ",")):
-            bla = r.get("BLA Number")
-            try:
-                a = app(f"BLA{bla}")
-            except ValueError:
-                o.skip(f.name, r)
+        for sec, h in enumerate(heads):
+            end = heads[sec + 1] if sec + 1 < len(heads) else len(lines)
+            # drop the section title line that precedes the next header
+            body = [ln for ln in lines[h:end] if not ln.startswith("Purple Book Database Extract")]
+            if sec == 1 and f != latest:
                 continue
-            iri = a + f"/purplebook/{fda_iri.slug(month)}/{i}"
-            links = [("ex:hasApplication", f"<{a}>")]
-            if r.get("Product Number"):
-                links.append(("ex:hasProduct", f"<{app_product(f'BLA{bla}', r['Product Number'])}>"))
-            r["_sourceFile"] = f.name
-            o.node(iri, r, "PurpleBookChange", f'{r.get("Proprietary Name", "")} BLA{bla} {r.get("N/R/U", "")} {month}'.strip(),
-                   f"{month}:{i}", links=links,
-                   source_url=f"https://purplebooksearch.fda.gov/downloads")
+            for i, r in enumerate(read_table("\n".join(body), ",")):
+                if not r:
+                    continue
+                bla = r.get("BLA Number")
+                try:
+                    a = app(f"BLA{bla}")
+                except ValueError:
+                    o.skip(f"{f.name} section {sec + 1}", r)
+                    continue
+                prod = r.get("Product Number")
+                r["_sourceFile"] = f.name
+                if sec == 0:
+                    iri = a + f"/purplebook/{fda_iri.slug(month)}/{i}"
+                    links = [("ex:hasApplication", f"<{a}>")]
+                    if prod:
+                        links.append(("ex:hasProduct", f"<{app_product(f'BLA{bla}', prod)}>"))
+                    o.node(iri, r, "PurpleBookChange",
+                           f'{r.get("Proprietary Name", "")} BLA{bla} {r.get("N/R/U", "")} {month}'.strip(),
+                           f"{month}:change:{i}", links=links,
+                           source_url="https://purplebooksearch.fda.gov/downloads")
+                else:
+                    iri = app_product(f"BLA{bla}", prod) if prod else a + f"/purplebook-extract/{i}"
+                    o.node(iri, r, "PurpleBookProduct",
+                           f'{r.get("Proprietary Name") or r.get("Proper Name", "")} BLA{bla}/{prod or ""}'.strip(),
+                           f"{month}:extract:{i}", links=[("ex:hasApplication", f"<{a}>")],
+                           source_url="https://purplebooksearch.fda.gov/downloads")
     o.close()
     return o
 

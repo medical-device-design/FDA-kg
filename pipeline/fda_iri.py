@@ -156,6 +156,18 @@ def application(number, app_type=None):
     return _inst("fda-drug-biologic-kg", "application", slug(canon))
 
 
+def application_untyped(number):
+    """An application number whose type (NDA/ANDA/BLA) the source does not give and
+    Applications.txt does not list, e.g. Drugs@FDA submission rows for ApplNo 000415.
+    Kept rather than dropped (no-data-loss rule); the IRI has no type prefix, so a
+    query can find these for later resolution.  application_untyped('000415')
+    -> .../fda-drug-biologic-kg/id/application/000415"""
+    s = re.sub(r"\s+", "", str(number))
+    if not s.isdigit():
+        raise ValueError(f"not a bare application number: {number!r}")
+    return _inst("fda-drug-biologic-kg", "application", f"{int(s):06d}")
+
+
 def application_product(number, product_number, app_type=None):
     """A product within an application (Drugs@FDA products, Orange Book rows).
     application_product('ANDA020512', '001') -> .../application/anda020512/product/001"""
@@ -232,6 +244,7 @@ def _selftest():
         application("020512", "A"): D + "application/anda020512",
         application("BLA125057"): D + "application/bla125057",
         application_product("020512", "001", "A"): D + "application/anda020512/product/001",
+        application_untyped("415"): D + "application/000415",
         ndc_product("71558-001_43046e5b-e40b"): D + "ndc-product/71558-001_43046e5b-e40b",
         ndc_package("71558-001-30"): D + "ndc-package/71558_001_30",
         caers_report("102855"): "https://bmedesign.org/fda-food-cosmetic-kg/id/caers-report/102855",
