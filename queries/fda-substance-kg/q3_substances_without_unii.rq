@@ -1,0 +1,2 @@
+PREFIX ex: <https://bmedesign.org/fda-substance-kg/ns/>
+SELECT (COUNT(?s) AS ?substancesWithoutUnii) WHERE { ?s a ex:Substance . FILTER NOT EXISTS { ?s ex:unii ?u } }

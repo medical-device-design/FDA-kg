@@ -1,0 +1,3 @@
+# Recalls published without a recall number (keyed by event id, Roche 2026-10-12)
+PREFIX ex: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT (COUNT(?r) AS ?unnumberedRecalls) WHERE { ?r a ex:Recall . FILTER NOT EXISTS { ?r ex:recallNumber ?n } }

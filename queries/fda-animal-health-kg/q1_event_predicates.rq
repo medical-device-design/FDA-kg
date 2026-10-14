@@ -1,0 +1,2 @@
+PREFIX ex: <https://bmedesign.org/fda-animal-health-kg/ns/>
+SELECT ?p (COUNT(*) AS ?uses) WHERE { ?e a ex:AnimalEvent ; ?p ?o } GROUP BY ?p ORDER BY DESC(?uses)

@@ -1,0 +1,4 @@
+# Q0b (every graph): records per source dataset and retrieval date
+PREFIX ex: <GRAPH_NS>
+SELECT ?dataset ?retrieved (COUNT(?s) AS ?records) WHERE { ?s ex:sourceDataset ?dataset ; ex:retrievedAt ?retrieved }
+GROUP BY ?dataset ?retrieved ORDER BY ?dataset

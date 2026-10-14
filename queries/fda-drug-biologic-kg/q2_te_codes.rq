@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?teCode (COUNT(?p) AS ?products) WHERE { ?p a ex:OrangeBookProduct ; ex:teCode ?teCode }
+GROUP BY ?teCode ORDER BY DESC(?products) LIMIT 15

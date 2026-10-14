@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-tobacco-kg/ns/>
+SELECT ?year (COUNT(?r) AS ?reports) WHERE { ?r a ex:TobaccoProblemReport ; ex:dateSubmitted ?d }
+GROUP BY (SUBSTR(STR(?d), 1, 4) AS ?year) ORDER BY ?year

@@ -1,0 +1,3 @@
+# How many reports still carry MedDRA reaction text (0 in a --publish build)
+PREFIX ex: <https://bmedesign.org/fda-food-cosmetic-kg/ns/>
+SELECT ?class (COUNT(DISTINCT ?r) AS ?reportsWithReactions) WHERE { ?r a ?class ; ex:reactions ?x } GROUP BY ?class

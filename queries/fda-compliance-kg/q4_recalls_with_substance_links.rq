@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT (COUNT(DISTINCT ?r) AS ?recallsWithSubstance) (COUNT(DISTINCT ?s) AS ?distinctSubstances) WHERE {
+  ?r a ex:Recall ; ex:hasSubstance ?s }

@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?applicant (COUNT(?p) AS ?licensedProducts) WHERE { ?p a ex:PurpleBookProduct ; ex:applicant ?applicant }
+GROUP BY ?applicant ORDER BY DESC(?licensedProducts) LIMIT 15

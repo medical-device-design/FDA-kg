@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-tobacco-kg/ns/>
+SELECT ?problem (COUNT(?r) AS ?reports) WHERE { ?r a ex:TobaccoProblemReport ; ex:reportedProductProblems ?problem }
+GROUP BY ?problem ORDER BY DESC(?reports)

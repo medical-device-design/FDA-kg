@@ -1,0 +1,2 @@
+# Q0 (every graph): nodes per class
+SELECT ?class (COUNT(?s) AS ?nodes) WHERE { ?s a ?class } GROUP BY ?class ORDER BY DESC(?nodes)

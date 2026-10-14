@@ -1,0 +1,5 @@
+PREFIX ex: <https://bmedesign.org/fda-substance-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?label ?unii ?cas WHERE {
+  ?s a ex:Substance ; rdfs:label ?label ; ex:unii ?unii ; ex:codes ?c .
+  ?c ex:codeSystem "CAS" ; ex:code ?cas } LIMIT 10

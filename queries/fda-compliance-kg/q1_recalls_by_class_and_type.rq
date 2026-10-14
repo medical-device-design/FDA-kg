@@ -1,0 +1,4 @@
+PREFIX ex: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?productType ?classification (COUNT(?r) AS ?recalls) WHERE {
+  ?r a ex:Recall ; ex:productType ?productType ; ex:classification ?classification }
+GROUP BY ?productType ?classification ORDER BY ?productType ?classification

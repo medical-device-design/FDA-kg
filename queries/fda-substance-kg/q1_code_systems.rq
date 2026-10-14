@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-substance-kg/ns/>
+SELECT ?codeSystem (COUNT(?c) AS ?codes) WHERE { ?c a ex:GsrsCodes ; ex:codeSystem ?codeSystem }
+GROUP BY ?codeSystem ORDER BY DESC(?codes) LIMIT 20

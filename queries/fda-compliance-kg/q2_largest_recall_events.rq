@@ -1,0 +1,4 @@
+PREFIX ex: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?event (COUNT(?r) AS ?recalls) (SAMPLE(?firm) AS ?aFirm) (SAMPLE(?reason) AS ?aReason) WHERE {
+  ?r a ex:Recall ; ex:hasRecallEvent ?event ; ex:recallingFirm ?firm ; ex:reasonForRecall ?reason }
+GROUP BY ?event ORDER BY DESC(?recalls) LIMIT 10

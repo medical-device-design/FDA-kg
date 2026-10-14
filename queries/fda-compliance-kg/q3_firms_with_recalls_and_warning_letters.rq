@@ -1,0 +1,8 @@
+# Join across two sources on the name-keyed firm node
+PREFIX ex: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?firmLabel (COUNT(DISTINCT ?r) AS ?recalls) (COUNT(DISTINCT ?w) AS ?warningLetters) WHERE {
+  ?firm a ex:RecallingFirm ; rdfs:label ?firmLabel .
+  ?r a ex:Recall ; ex:hasRecallingFirm ?firm .
+  ?w a ex:WarningLetter ; ex:hasFirm ?firm }
+GROUP BY ?firmLabel ORDER BY DESC(?recalls) LIMIT 15

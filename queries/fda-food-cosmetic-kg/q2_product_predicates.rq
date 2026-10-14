@@ -1,0 +1,4 @@
+# Predicate inventory of the product child nodes (what fields the sources carry)
+PREFIX ex: <https://bmedesign.org/fda-food-cosmetic-kg/ns/>
+SELECT ?class ?p (COUNT(*) AS ?uses) WHERE { ?x a ?class ; ?p ?o . FILTER(?class IN (ex:CaersProducts, ex:CosmeticProducts)) }
+GROUP BY ?class ?p ORDER BY ?class DESC(?uses)

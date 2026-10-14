@@ -1,0 +1,3 @@
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?class (COUNT(DISTINCT ?s) AS ?recordsWithSubstance) (COUNT(DISTINCT ?sub) AS ?distinctSubstances) WHERE {
+  ?s a ?class ; ex:hasSubstance ?sub } GROUP BY ?class

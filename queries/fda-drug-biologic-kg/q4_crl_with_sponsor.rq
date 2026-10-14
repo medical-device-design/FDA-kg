@@ -1,0 +1,6 @@
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?letterDate ?company ?appLabel WHERE {
+  ?c a ex:CompleteResponseLetter ; ex:letterDate ?letterDate ; ex:companyName ?company ; ex:hasApplication ?app .
+  ?app a ex:DrugApplication ; rdfs:label ?appLabel }
+ORDER BY DESC(?letterDate) LIMIT 15

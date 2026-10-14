@@ -1,0 +1,4 @@
+# Same application IRI carrying provenance from openFDA drugsfda AND the Drugs@FDA data files
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT (COUNT(DISTINCT ?a) AS ?applicationsInBothViews) WHERE {
+  ?a a ex:DrugApplication ; ex:sourceDataset "drug/drugsfda" ; ex:sourceDataset "fda/drugsatfda-data-files" }

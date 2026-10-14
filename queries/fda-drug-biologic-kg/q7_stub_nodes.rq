@@ -1,0 +1,2 @@
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?class (COUNT(?s) AS ?stubs) WHERE { ?s a ?class ; ex:isStub true } GROUP BY ?class

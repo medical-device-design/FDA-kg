@@ -1,0 +1,4 @@
+PREFIX ex: <https://bmedesign.org/fda-animal-health-kg/ns/>
+SELECT ?code (SAMPLE(?name) AS ?termName) (COUNT(?x) AS ?reactions) WHERE {
+  ?x a ex:AnimalEventReaction ; ex:veddraTermCode ?code . OPTIONAL { ?x ex:veddraTermName ?name } }
+GROUP BY ?code ORDER BY DESC(?reactions) LIMIT 15

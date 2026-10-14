@@ -1,0 +1,8 @@
+# Shortage -> shared package NDC node (NSDE) -> application
+PREFIX ex: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?shortageLabel ?packageNdc ?appLabel WHERE {
+  ?sh a ex:DrugShortage ; rdfs:label ?shortageLabel ; ex:hasPackageNdc ?pkg .
+  ?pkg a ex:NdcPackage ; ex:packageNdc ?packageNdc ; ex:hasApplication ?app .
+  ?app rdfs:label ?appLabel }
+LIMIT 15
