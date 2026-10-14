@@ -231,7 +231,7 @@ def convert_orangebook(snap, out_path, stamp):
             o.skip("exclusivity.txt", r)
             continue
         iri = prod + "/exclusivity/" + fda_iri.slug(f'{r["Exclusivity_Code"]} {r.get("Exclusivity_Date", "")}')
-        o.node(iri, r, "OrangeBookExclusivity", f'exclusivity {r["Exclusivity_Code"]} ({r["Appl_No"]}/{r["Product_No"]})',
+        o.node(iri, r, "OrangeBookExclusivityRecord", f'exclusivity {r["Exclusivity_Code"]} ({r["Appl_No"]}/{r["Product_No"]})',
                f'{r["Appl_No"]}:{r["Product_No"]}:{r["Exclusivity_Code"]}', links=[("ex:hasProduct", f"<{prod}>")], source_url=base)
     o.close()
     return o
@@ -293,6 +293,7 @@ def convert_warning_letters(snap, out_path, stamp):
     data = json.loads(next(snap.glob("*.json")).read_text(encoding="utf-8"))
     o = Out(out_path, C, "Wl", {"field_change_date_2", "field_letter_issue_datetime", "field_response_date",
                                "field_closeout_date"}, stamp, "fda/warning-letters-index")
+    firms = {}       # firm IRI -> name; the same name-keyed node the enforcement converter mints
     for r in data:
         r = clean(r)
         path = r.get("path")
@@ -308,11 +309,15 @@ def convert_warning_letters(snap, out_path, stamp):
         links = []
         if company:
             try:
-                links.append(("ex:hasFirm", f"<{fda_iri.recalling_firm(company)}>"))
+                firm_iri = fda_iri.recalling_firm(company)
+                links.append(("ex:hasFirm", f"<{firm_iri}>"))
+                firms.setdefault(firm_iri, company)
             except ValueError:
                 pass
         o.node(iri, r, "WarningLetter", f'{company} {r.get("field_letter_issue_datetime", "")}'.strip(), key,
                links=links, source_url="https://www.fda.gov" + path)
+    for firm_iri in sorted(firms):
+        o.m.block(firm_iri, [("a", "ex:RecallingFirm"), ("rdfs:label", common.lit(firms[firm_iri]))])
     o.close()
     return o
 

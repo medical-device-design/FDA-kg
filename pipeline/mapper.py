@@ -25,9 +25,7 @@ import common
 import fda_iri
 
 RAW_TEXT_KEYS = {"molfile"}            # whitespace is meaningful, never strip
-_US_DATE = re.compile(r"^(\d{2})/(\d{2})/(\d{4})$")
-_SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._~-]*$")
-_WORDS = re.compile(r"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])")
+_US_DATE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 
 
 _DT_TIME = re.compile(r"^(\d{4}-\d{2}-\d{2}) \d{2}:\d{2}:\d{2}$")
@@ -46,7 +44,7 @@ def date_lit(v):
         return None
     m = _US_DATE.match(s)
     if m:
-        mm, dd, yyyy = m.groups()
+        mm, dd, yyyy = f"{int(m.group(1)):02d}", f"{int(m.group(2)):02d}", m.group(3)
     else:
         m = _DT_TIME.match(s)
         if m:
@@ -57,6 +55,8 @@ def date_lit(v):
         mm, dd, yyyy = f"{_MONTHS[m.group(1)[:3].lower()]:02d}", f"{int(m.group(2)):02d}", m.group(3)
     typed = common.date_lit(f"{yyyy}{mm}{dd}")
     return typed if typed.endswith("^^xsd:date") else common.lit(s)
+_SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._~-]*$")
+_WORDS = re.compile(r"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])")
 
 
 def words(key):
@@ -180,6 +180,7 @@ def _selftest():
     assert 'ex:when "2024-01-02"^^xsd:date' in t
     assert 'ex:bad "20249999"' in t
     assert date_lit("01/19/2023") == '"2023-01-19"^^xsd:date'
+    assert date_lit("4/5/2018") == '"2018-04-05"^^xsd:date'
     assert date_lit("13/40/2023") == "\"13/40/2023\""
     assert date_lit("2003-07-28 00:00:00") == '"2003-07-28"^^xsd:date'
     assert date_lit("Jul 13, 2026") == '"2026-07-13"^^xsd:date'
