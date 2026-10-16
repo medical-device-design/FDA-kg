@@ -14,7 +14,7 @@ date, provenance on every record. Keys:
                        pages overlap, so identical rows are written once); ex:hasRecallingFirm
                        uses the same name-keyed firm node as enforcement recalls and warning letters
   tobacco-products     tobacco-product/<sha1 of the row>; ex:stn is the join key to marketing orders
-  adafda               animal-application/<application number, slugged>, children via mapper
+  adafda               animal-application/<nada|anada|cnada><6-digit number>, children via mapper
 
 Usage:
   python3 l1_misc.py ndi <snapshot_dir> <out.ttl>
@@ -163,7 +163,9 @@ def convert_adafda(snap, out, stamp):
     previews = {p.stem: p for p in (snap / "previews").glob("*.json")} if (snap / "previews").is_dir() else {}
     fh = open(out, "w", encoding="utf-8", newline="\n")
     fh.write(common.prefixes({"ex": fda_iri.ns(A)}) + "\n")
-    m = mapper.Mapper(fh, class_prefix="AnimalDrug", date_fields={"approvalDate", "actionDate", "dateOfAction"})
+    # child nodes are Adafda<Section> (the preview bean has a nested "application" section,
+    # so the AnimalDrug prefix would collide with the top class AnimalDrugApplication)
+    m = mapper.Mapper(fh, class_prefix="Adafda", date_fields={"approvalDate", "actionDate", "dateOfAction", "publishDate", "noohDate", "voluntaryWithdrawalDate"})
     items = cat if isinstance(cat, list) else cat.get("content") or cat.get("results") or cat.get("data") or []
     n = 0
     for rec in items:
@@ -171,7 +173,12 @@ def convert_adafda(snap, out, stamp):
         appno = rec.get("applicationNumber") or rec.get("application_number")
         if not appno:
             continue
-        iri = fda_iri._inst(A, "animal-application", fda_iri.slug(str(appno)))
+        # Animal Drugs @ FDA gives the number as an integer and the type as a letter
+        # (N = NADA, A = ANADA, C = conditional approval); NADA 004-536 -> nada004536
+        atype = {"N": "nada", "A": "anada", "C": "cnada"}.get(str(rec.get("applicationType") or "").upper(),
+                                                              str(rec.get("applicationType") or "x").lower())
+        num = re.sub(r"\D", "", str(appno))
+        iri = fda_iri._inst(A, "animal-application", f"{atype}{int(num):06d}" if num else fda_iri.slug(str(appno)))
         full = dict(rec)
         if app_id in previews:
             try:
@@ -181,7 +188,8 @@ def convert_adafda(snap, out, stamp):
                         full.setdefault(k, v)
             except json.JSONDecodeError:
                 pass
-        label = f"{appno} {rec.get('proprietaryName') or rec.get('sponsorName') or ''}".strip()
+        label = f"{atype.upper()} {int(num) // 1000:03d}-{int(num) % 1000:03d}" if num and len(num) <= 6 else str(appno)
+        label = f"{label} {(rec.get('proprietaryName') or rec.get('sponsorName') or '').strip()}".strip()
         extra = [("rdfs:label", common.lit(label))]
         extra += common.provenance("fda/animal-drugs-at-fda", str(appno),
                                    source_url=f"https://animaldrugsatfda.fda.gov/adafda/views/#/search/application/{app_id}" if app_id else
