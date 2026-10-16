@@ -36,6 +36,7 @@ RECORDS = {
         "WarningLetter": dict(links={"ex:hasFirm": (C, "recalling-firm")},
                               dates=["ex:fieldLetterIssueDatetime", "ex:fieldResponseDate", "ex:fieldCloseoutDate", "ex:fieldChangeDate2"]),
         "HistoricalDocument": dict(),
+        "RecallAnnouncement": dict(links={"ex:hasRecallingFirm": (C, "recalling-firm")}, dates=["ex:date"]),
     },
     S: {
         "Substance": dict(extra=['sh:property [ sh:path ex:unii ; sh:maxCount 1 ; sh:pattern "^[A-Z0-9]{10}$" ]']),
@@ -73,6 +74,7 @@ RECORDS = {
         "ThresholdOfRegulationExemption": dict(), "RecycledPlasticOpinion": dict(dates=["ex:dateOfNol"]),
         "SeafoodListEntry": dict(), "NewPlantVarietyConsultation": dict(), "NewProteinConsultation": dict(),
         "GenomeEditedPlantMeeting": dict(dates=["ex:dateOfMeeting"]),
+        "NdiNotification": dict(dates=["ex:dateOfSubmission", "ex:dateOfFdaSResponse"]),
         "CaersReport": dict(dates=["ex:dateCreated", "ex:dateStarted"],
                             extra=['sh:property [ sh:path ex:reportNumber ; sh:minCount 1 ; sh:maxCount 1 ]']),
         "CosmeticEvent": dict(dates=["ex:initialReceivedDate", "ex:latestReceivedDate", "ex:eventDate"],
@@ -81,11 +83,14 @@ RECORDS = {
     A: {
         "AnimalEvent": dict(dates=["ex:originalReceiveDate", "ex:onsetDate"],
                             extra=['sh:property [ sh:path ex:uniqueAerIdNumber ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        "AnimalDrugApplication": dict(dates=["ex:approvalDate", "ex:actionDate", "ex:dateOfAction"],
+                                      extra=['sh:property [ sh:path ex:applicationNumber ; sh:minCount 1 ; sh:maxCount 1 ]']),
     },
     T: {
         "TobaccoProblemReport": dict(dates=["ex:dateSubmitted"],
                                      extra=['sh:property [ sh:path ex:reportId ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ]']),
         "TobaccoMarketingOrder": dict(dates=["ex:issueDate"]),
+        "TobaccoProduct": dict(dates=["ex:dateOfAction"], extra=['sh:property [ sh:path ex:stn ; sh:maxCount 1 ]']),
         "TobaccoDigitalAdStudyRow": dict(), "TobaccoHarmPerceptionRecord": dict(),
         "TobaccoPreventionAdStudy": dict(), "SmokefreeMetric": dict(),
     },
