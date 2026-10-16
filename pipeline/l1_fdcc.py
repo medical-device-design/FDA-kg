@@ -17,6 +17,14 @@ Sets and keys:
   scogs              SCOGS reports                                scogs-report/<report no>
   indirectadditives  Food contact substances listed in 21 CFR     indirect-additive/<CAS>
   coloradditives     Regulatory status of color additives         color-additive/<CAS>
+  cedi               Cumulative Estimated Daily Intake            cedi/<CAS>
+  postmarket         Post-market assessment substances            postmarket-assessment/<CAS>
+  tor                Threshold of Regulation exemptions           tor-exemption/<file no>
+  recycledplastics   Recycled plastics no-objection letters       recycled-plastic/<recycle no>
+  seafoodlist        The Seafood List                             seafood/<scientific name>
+  newplantvarietyconsultations  New plant variety consultations   plant-variety-consultation/<BNF no>
+  newproteinconsultations       New protein consultations         new-protein-consultation/<NPC no>
+  genomeeditedplants Genome-edited plant meetings                 genome-edited-plant/<VPM no>
   marketingorders    Tobacco marketing orders (fda.gov/media/112123)  hashed -> fda-tobacco-kg
 A CAS-keyed row whose CAS repeats gets _2, _3 ... in source order (same rule as
 event-keyed recalls). Rows with no key at all are hashed.
@@ -63,6 +71,30 @@ SETS = {
     "coloradditives":    dict(graph=F, cls="ColorAdditive", kind="color-additive", key="CAS Reg No or other ID code",
                               label="Color", cas="CAS Reg No or other ID code",
                               dataset="fda/fdcc-coloradditives", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=ColorAdditives"),
+    "cedi":              dict(graph=F, cls="CediRecord", kind="cedi", key="CAS Reg. No. (or other ID)",
+                              label="Substance", cas="CAS Reg. No. (or other ID)",
+                              dataset="fda/fdcc-cedi", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=CEDI"),
+    "postmarket":        dict(graph=F, cls="PostmarketAssessmentSubstance", kind="postmarket-assessment", key="CAS Reg. No.",
+                              label="Substance", cas="CAS Reg. No.",
+                              dataset="fda/fdcc-postmarket", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=Postmarket"),
+    "tor":               dict(graph=F, cls="ThresholdOfRegulationExemption", kind="tor-exemption", key="File",
+                              label="Food Contact Substance", cas=None,
+                              dataset="fda/fdcc-tor", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=TOR"),
+    "recycledplastics":  dict(graph=F, cls="RecycledPlasticOpinion", kind="recycled-plastic", key="Recycle Number",
+                              label="Polymer", cas=None,
+                              dataset="fda/fdcc-recycledplastics", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=RecycledPlastics"),
+    "seafoodlist":       dict(graph=F, cls="SeafoodListEntry", kind="seafood", key="Scientific Name",
+                              label="Acceptable Market Name(s)", cas=None,
+                              dataset="fda/fdcc-seafoodlist", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=SeafoodList"),
+    "newplantvarietyconsultations": dict(graph=F, cls="NewPlantVarietyConsultation", kind="plant-variety-consultation", key="BNF No.",
+                              label="Food", cas=None,
+                              dataset="fda/fdcc-newplantvarietyconsultations", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=NewPlantVarietyConsultations"),
+    "newproteinconsultations": dict(graph=F, cls="NewProteinConsultation", kind="new-protein-consultation", key="NPC No.",
+                              label="Protein", cas=None,
+                              dataset="fda/fdcc-newproteinconsultations", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=NewProteinConsultations"),
+    "genomeeditedplants": dict(graph=F, cls="GenomeEditedPlantMeeting", kind="genome-edited-plant", key="VPM No",
+                              label="Plant", cas=None,
+                              dataset="fda/fdcc-genomeeditedplants", url="https://www.hfpappexternal.fda.gov/scripts/fdcc/?set=GenomeEditedPlants"),
     "marketingorders":   dict(graph=T, cls="TobaccoMarketingOrder", kind="marketing-order", key=None,
                               label="Product", cas=None,
                               dataset="fda/tobacco-marketing-orders", url="https://www.fda.gov/media/112123/download?attachment"),
