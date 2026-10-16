@@ -36,9 +36,9 @@ The FDA Substance Knowledge Graph publishes the U.S. Food and Drug Administratio
 
 **Shortcut identifiers for joins** (PRIMARY codes only, directly on the substance): `fdasub:casNumber`, `fdasub:pubchemCid`, `fdasub:dtxsid` (EPA CompTox), `fdasub:rxcui`, `fdasub:drugbankId`, `fdasub:chebiId`, `fdasub:chemblId`, `fdasub:ecNumber`, `fdasub:meshId`, `fdasub:nciThesaurusCode`, `fdasub:innId`. Use `fdasub:dtxsid` to join to biobricks-ice and other EPA CompTox graphs, `fdasub:pubchemCid` for PubChem-based graphs, and `fdasub:unii` for Wikidata (P652).
 
-**Related graphs.** Other FDA graphs in this family link to these substance IRIs. For example, drug recalls in `fda-compliance-kg` point to the recalled product's ingredients with `hasSubstance`.
+**Related graphs.** Other FDA graphs in this family link to these substance IRIs. For example, drug recalls in `fda-compliance-kg` point to the recalled product's ingredients with `hasSubstance`, and food ingredients in `fda-food-cosmetic-kg` link here by CAS number.
 
-**Source and licence.** GSRS and UNII data are public domain U.S. government works distributed by openFDA (https://open.fda.gov/license/). Refreshed from openFDA bulk downloads. Funded under NSF award 2535091 (Proto-OKN Theme 2: OKN-Fabric) through subaward 5136002. The graph is released under CC0 1.0.
+**Source and license.** GSRS and UNII data are public domain U.S. government works distributed by openFDA (https://open.fda.gov/license/). Refreshed from openFDA bulk downloads. Funded under NSF award 2535091 (Proto-OKN Theme 2: OKN-Fabric) through subaward 5136002. The graph is released under CC0 1.0.
 
 
 ```

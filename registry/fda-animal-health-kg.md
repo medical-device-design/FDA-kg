@@ -30,13 +30,13 @@ The FDA Animal Health Knowledge Graph publishes the Center for Veterinary Medici
 
 **Main class.** `fdavet:AnimalEvent`, IRI `https://bmedesign.org/fda-animal-health-kg/id/animal-event/<unique AER id>` (for example `.../animal-event/usa_usfdacvm_2015_us_048928`). Properties include `fdavet:originalReceiveDate` and `fdavet:onsetDate` (xsd:date), `fdavet:numberOfAnimalsAffected`, `fdavet:numberOfAnimalsTreated`, `fdavet:primaryReporter`, `fdavet:typeOfInformation`, `fdavet:healthAssessmentPriorToExposure` and `fdavet:foreignOrDomestic`.
 
-**Child nodes** under each report: `fdavet:AnimalEventAnimal` (species, breed, gender, age with unit, weight with unit, reproductive status), one `fdavet:AnimalEventDrug` per drug (brand name, dosage form, route, ATC vet code, manufacturer name and CVM registration number, lot numbers, dose and frequency, use according to label, previous exposure) with `fdavet:AnimalEventActiveIngredients` children (ingredient name and dose), `fdavet:AnimalEventOutcome` (medical status and number of animals), `fdavet:AnimalEventReceiver` (the receiving FDA office) and `fdavet:AnimalEventReaction` (VeDDRA version and term code).
+**Child nodes** under each report: `fdavet:AnimalEventAnimal` (species, breed, gender, age with unit, weight with unit, reproductive status), one `fdavet:AnimalEventDrug` per drug (brand name, dosage form, route, ATC vet code, manufacturer name and CVM registration number, lot numbers, dose and frequency, use according to label, previous exposure) with `fdavet:AnimalEventActiveIngredients` children (ingredient name and dose), `fdavet:AnimalEventOutcome` (medical status and number of animals), `fdavet:AnimalEventReceiver` (the receiving FDA office) and `fdavet:AnimalEventReaction` (VeDDRA version, term code and term name).
 
-**Reaction terms.** Reactions are coded in VeDDRA. The VeDDRA term codes are published; the term names are withheld from the published files until the VeDDRA licence is confirmed.
+**Responsible use.** These are passive surveillance reports: counts are not incidence rates, and a report does not establish that a drug caused the event.
 
 **Planned additions.** Animal Drugs @ FDA (NADA and ANADA applications, the Green Book), the VFD drug list and CVM recalls, which will give each drug node an application to link to.
 
-**Source and licence.** openFDA animalandveterinary/event: public domain U.S. government works. Funded under NSF award 2535091 (Proto-OKN Theme 2: OKN-Fabric) through subaward 5136002. The graph is released under CC0 1.0.
+**Source and license.** openFDA animalandveterinary/event: public domain U.S. government works. Reactions are coded in VeDDRA, maintained by the European Medicines Agency (EMA). VeDDRA term names are kept in the published graph with EMA acknowledged as their source, as EMA's legal notice permits; they are not covered by the CC0 dedication. Funded under NSF award 2535091 (Proto-OKN Theme 2: OKN-Fabric) through subaward 5136002. The graph is released under CC0 1.0.
 
 
 ```
@@ -50,4 +50,12 @@ provenance:
           label: Public Domain
           spdx: CC0-1.0
           uri: https://open.fda.gov/license/
+  - derivedFrom:
+      label: VeDDRA (Veterinary Dictionary for Drug Regulatory Activities), European Medicines Agency
+      uri: https://www.ema.europa.eu/en/veterinary-regulatory-overview/post-authorisation-veterinary-medicines
+      kind: Terminology
+      license:
+        data:
+          label: EMA legal notice (reuse with acknowledgement of EMA as the source)
+          uri: https://www.ema.europa.eu/en/about-us/about-website/legal-notice
 ```
