@@ -95,6 +95,10 @@ class TableParser(HTMLParser):
                 self._close_until({"table"})
             elif tag in ("td", "th"):
                 self._close_until({"tr", "table"})
+                if self.cur.tag == "table":          # a cell with no <tr>: browsers open one implicitly
+                    tr = Node("tr", (), self.cur)
+                    self.cur.children.append(tr)
+                    self.cur = tr
             n = Node(tag, attrs, self.cur)
             self.cur.children.append(n)
             self.cur = n
@@ -168,13 +172,23 @@ def walk_rows(root):
             continue
         texts = [clean(cell_text(c)) for c in cs]
         is_header = any(c.tag == "th" or "header" in c.attrs.get("class", "").lower() for c in cs)
-        nested = [t for c in cs for t in c.find_all("table", direct=True)]
+        nested = [t for c in cs for t in c.find_all("table", direct=True) if is_matrix(t)]
         for t in nested:
             consumed.update(id(x) for x in t.find_all("tr"))
         if is_header and not nested and texts[0]:
             section = texts[0].upper()
             continue
+        if not nested and not any(texts):
+            continue                      # layout wrapper row, its content rows follow on their own
         yield section, cs, texts, nested
+
+
+def is_matrix(table):
+    """A leaf table (no tables inside) with at least two rows of three or more cells."""
+    if any(True for _ in table.find_all("table")):
+        return False
+    wide = [tr for tr in table.find_all("tr") if len(cells(tr)) >= 3]
+    return len(wide) >= 2
 
 
 def matrix(table):
@@ -226,7 +240,7 @@ def convert_detail(page, app, key_iri, writer):
             last_field = pred
         elif len(texts) == 1 and texts[0] and last_field in ("address",):
             fields.setdefault("addressLine", []).append(texts[0])
-        elif len(texts) == 1 and texts[0] and not texts[0].startswith(("eBER v", "eHCTERS v", "Contact ", "FDA Home", "Print Date", "Blood Establishment Registration", "HUMAN CELL")):
+        elif len(texts) == 1 and texts[0] and not texts[0].startswith(("[img:", "eBER v", "eHCTERS v", "Contact ", "FDA Home", "Print Date", "Blood Establishment Registration", "HUMAN CELL")):
             fields.setdefault("note", []).append(texts[0])
     return fields, children
 
