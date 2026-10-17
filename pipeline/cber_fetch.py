@@ -94,9 +94,9 @@ class App:
     def rows(self, page):
         """(id, name, place, FEI, status) per result row, in the table's column order."""
         out = []
-        tbl = re.search(r'<table\b[^>]*summary="Query Results"[^>]*>.*?</table>', page, re.S | re.I)
-        src = tbl.group(0) if tbl else page
-        for tr in re.findall(r"<tr\b.*?</tr>", src, re.S | re.I):
+        # split on row starts rather than matching <tr>...</tr>: the tissue app's result
+        # table has unclosed rows, and only result rows carry a detail link anyway
+        for tr in re.split(r"<tr\b", page, flags=re.I):
             m = re.search(self.cfg["idkey"] + r"=(\d+)", tr)
             if not m:
                 continue
