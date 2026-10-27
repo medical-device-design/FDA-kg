@@ -19,6 +19,7 @@ BASE = "https://bmedesign.org/"
 GRAPHS = (
     "fda-compliance-kg", "fda-substance-kg", "fda-drug-biologic-kg",
     "fda-food-cosmetic-kg", "fda-animal-health-kg", "fda-tobacco-kg",
+    "fda-drug-event-kg",
 )
 
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
@@ -196,6 +197,22 @@ def hashed(graph, kind, record):
     h = hashlib.sha1(json.dumps(record, sort_keys=True, separators=(",", ":"),
                                 ensure_ascii=True, default=str).encode()).hexdigest()
     return _inst(graph, kind, h[:20])
+
+
+def drug_label(set_id):
+    """openFDA drug/label (SPL) record by its set id, the stable id across label versions.
+    drug_label('0b0be196-0c62-461c-94f4-9a35339b4501') -> .../fda-drug-biologic-kg/id/label/0b0be196-..."""
+    if not set_id:
+        raise ValueError("empty set id")
+    return _inst("fda-drug-biologic-kg", "label", slug(set_id))
+
+
+def drug_event_report(safetyreportid):
+    """FAERS (openFDA drug/event) report by safety report id, in its own graph.
+    drug_event_report('10003300') -> .../fda-drug-event-kg/id/report/10003300"""
+    if not safetyreportid:
+        raise ValueError("empty safetyreportid")
+    return _inst("fda-drug-event-kg", "report", slug(str(safetyreportid)))
 
 
 # ---- fda-food-cosmetic-kg, fda-animal-health-kg, fda-tobacco-kg ----------

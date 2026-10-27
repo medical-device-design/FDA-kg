@@ -32,6 +32,7 @@ import mapper      # noqa: E402
 
 D, F, A, T, C = ("fda-drug-biologic-kg", "fda-food-cosmetic-kg",
                  "fda-animal-health-kg", "fda-tobacco-kg", "fda-compliance-kg")
+E = "fda-drug-event-kg"
 
 
 def _first(rec, key):
@@ -62,6 +63,19 @@ def _openfda_links(rec):
             pairs.append(("ex:hasPackageNdc", f"<{fda_iri.ndc_package(n)}>"))
         except ValueError:
             pass
+    return pairs
+
+
+def _faers_links(rec):
+    """FAERS reports: the harmonized openfda block sits inside each patient.drug item;
+    lift its UNIIs and application numbers to report-level links (deduplicated)."""
+    pairs, seen = [], set()
+    for d in (rec.get("patient") or {}).get("drug") or []:
+        if isinstance(d, dict):
+            for pr in _openfda_links(d):
+                if pr not in seen:
+                    seen.add(pr)
+                    pairs.append(pr)
     return pairs
 
 
@@ -102,15 +116,21 @@ def _package_child(key, item):
 
 
 def _strip(rec, *paths):
-    """Remove licensed fields in place. A path is ('reactions',) for a top-level
-    key or ('reaction', 'veddra_term_name') for a key inside each list item."""
-    for path in paths:
+    """Remove licensed fields in place. A path is ('reactions',) for a top-level key,
+    ('reaction', 'veddra_term_name') for a key inside each list item, or any deeper
+    path such as ('patient', 'reaction', 'reactionmeddrapt'); lists along the way
+    are walked item by item."""
+    def walk(node, path):
+        if not isinstance(node, dict):
+            return
         if len(path) == 1:
-            rec.pop(path[0], None)
-        else:
-            for item in rec.get(path[0]) or []:
-                if isinstance(item, dict):
-                    item.pop(path[1], None)
+            node.pop(path[0], None)
+            return
+        child = node.get(path[0])
+        for item in (child if isinstance(child, list) else [child]):
+            walk(item, path[1:])
+    for path in paths:
+        walk(rec, path)
 
 
 ENDPOINTS = {
@@ -170,6 +190,27 @@ ENDPOINTS = {
         rec_id=lambda r: r["package_ndc"],
         dates={"marketing_start_date", "marketing_end_date", "inactivation_date", "reactivation_date"},
         links=lambda r: _app_link(r.get("application_number_or_citation")),
+    ),
+    "drug/label": dict(
+        # SPL labels as openFDA publishes them (one record per label set, latest version);
+        # every text section is kept, tables included
+        graph=D, cls="DrugLabel", prefix="Label",
+        iri=lambda r: fda_iri.drug_label(r["set_id"]),
+        label=lambda r: f'{(_first(r.get("openfda") or {}, "brand_name") or _first(r.get("openfda") or {}, "generic_name") or "label")} ({r["set_id"]})',
+        rec_id=lambda r: r["set_id"],
+        dates={"effective_time"},
+        links=_openfda_links,
+    ),
+    "drug/event": dict(
+        # FAERS reports, own graph (fda-drug-event-kg). Reporter identity is not in openFDA;
+        # patient block is age, sex, weight and the drug and reaction lists
+        graph=E, cls="AdverseEventReport", prefix="Faers",
+        iri=lambda r: fda_iri.drug_event_report(r["safetyreportid"]),
+        label=lambda r: f'FAERS report {r["safetyreportid"]}',
+        rec_id=lambda r: str(r["safetyreportid"]),
+        dates={"receivedate", "receiptdate", "transmissiondate", "drugstartdate", "drugenddate", "patientdeathdate"},
+        links=_faers_links,
+        licensed=lambda r: _strip(r, ("patient", "reaction", "reactionmeddrapt")),   # MedDRA PT text; codes and outcome kept
     ),
     "food/event": dict(
         graph=F, cls="CaersReport", prefix="Caers",
@@ -234,6 +275,7 @@ ENDPOINTS = {
 
 SOURCE_URL = "https://api.fda.gov/{ep}.json?search={field}:%22{val}%22"
 SEARCH_FIELD = {"drug/drugsfda": "application_number", "drug/ndc": "product_id",
+                "drug/label": "set_id", "drug/event": "safetyreportid",
                 "other/nsde": "package_ndc", "food/event": "report_number",
                 "cosmetic/event": "report_number", "tobacco/problem": "report_id",
                 "animalandveterinary/event": "unique_aer_id_number"}

@@ -22,6 +22,7 @@ import fda_iri  # noqa: E402
 B = "https://bmedesign.org/"
 D, C, S, F, A, T = ("fda-drug-biologic-kg", "fda-compliance-kg", "fda-substance-kg",
                     "fda-food-cosmetic-kg", "fda-animal-health-kg", "fda-tobacco-kg")
+E = "fda-drug-event-kg"
 
 # graph -> {class: dict(links={pred: (graph, kind)}, dates=[...], extra=[raw property shapes])}
 RECORDS = {
@@ -69,6 +70,9 @@ RECORDS = {
                                          'sh:property [ sh:path ex:registrantContactEmail ; sh:maxCount 0 ]',
                                          'sh:property [ sh:path ex:agentDetails ; sh:maxCount 0 ]']),
         "Registrant": dict(prov=False, extra=['sh:property [ sh:path ex:duns ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        "DrugLabel": dict(links={"ex:hasSubstance": (S, "unii"), "ex:hasApplication": (D, "application"),
+                                 "ex:hasPackageNdc": (D, "ndc-package")}, dates=["ex:effectiveTime"],
+                          extra=['sh:property [ sh:path ex:setId ; sh:minCount 1 ; sh:maxCount 1 ]']),
         # CBER registries (eBER, eHCTERS): people in the reporting-official and US-agent sections are never written
         "BloodEstablishment": dict(links={"ex:hasFirm": (C, "firm"), "ex:hasProductOperation": (D, "blood-establishment")},
                                    extra=['sh:property [ sh:path ex:registryId ; sh:minCount 1 ; sh:maxCount 1 ]',
@@ -116,6 +120,14 @@ RECORDS = {
         "AnimalDrugApplication": dict(dates=["ex:approvalDate", "ex:actionDate", "ex:dateOfAction"],
                                       extra=['sh:property [ sh:path ex:applicationNumber ; sh:minCount 1 ; sh:maxCount 1 ]']),
     },
+    E: {
+        "AdverseEventReport": dict(links={"ex:hasSubstance": (S, "unii"), "ex:hasApplication": (D, "application"),
+                                          "ex:hasPackageNdc": (D, "ndc-package")},
+                                   dates=["ex:receivedate", "ex:receiptdate", "ex:transmissiondate"],
+                                   extra=['sh:property [ sh:path ex:safetyreportid ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        # MedDRA preferred-term text never reaches the published file (built with --publish)
+        "FaersReaction": dict(prov=False, label=False, extra=['sh:property [ sh:path ex:reactionmeddrapt ; sh:maxCount 0 ]']),
+    },
     T: {
         "TobaccoProblemReport": dict(dates=["ex:dateSubmitted"],
                                      extra=['sh:property [ sh:path ex:reportId ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ]']),
@@ -150,7 +162,7 @@ def shape(graph, cls, cfg):
     lines = [f"shp:{cls}Shape a sh:NodeShape ;", f"    sh:targetClass ex:{cls} ;"]
     if cfg.get("prov", True):
         lines.append(PROV.rstrip("\n"))
-    else:
+    elif cfg.get("label", True):
         lines.append("    sh:property [ sh:path rdfs:label ; sh:minCount 1 ] ;")
     for pred, (g, kind) in cfg.get("links", {}).items():
         base = fda_iri.id_base(g) + kind + "/"
