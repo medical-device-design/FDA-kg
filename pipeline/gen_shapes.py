@@ -72,7 +72,8 @@ RECORDS = {
         "Registrant": dict(prov=False, extra=['sh:property [ sh:path ex:duns ; sh:minCount 1 ; sh:maxCount 1 ]']),
         "DrugLabel": dict(links={"ex:hasSubstance": (S, "unii"), "ex:hasApplication": (D, "application"),
                                  "ex:hasPackageNdc": (D, "ndc-package")}, dates=["ex:effectiveTime"],
-                          extra=['sh:property [ sh:path ex:setId ; sh:minCount 1 ; sh:maxCount 1 ]']),
+                          # openFDA spells a few set ids in both letter cases; both spellings stay on the one node
+                          extra=['sh:property [ sh:path ex:setId ; sh:minCount 1 ]']),
         # CBER registries (eBER, eHCTERS): people in the reporting-official and US-agent sections are never written
         "BloodEstablishment": dict(links={"ex:hasFirm": (C, "firm"), "ex:hasProductOperation": (D, "blood-establishment")},
                                    extra=['sh:property [ sh:path ex:registryId ; sh:minCount 1 ; sh:maxCount 1 ]',
