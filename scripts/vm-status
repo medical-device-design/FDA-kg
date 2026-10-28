@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# vm-status: what both KG projects are doing on this VM right now (read-only).
+# A process belongs to a project when its command line or its working directory is under /srv/<project>.
+echo "== $(date '+%F %T')  load: $(cut -d' ' -f1-3 /proc/loadavg)  cpus: $(nproc)"
+free -g | awk 'NR==2{printf "== RAM: %s GB total, %s GB used, %s GB available\n",$2,$3,$7}'
+df -h / | awk 'NR==2{printf "== disk /: %s used of %s, %s free (%s)\n",$3,$2,$4,$5}'
+for p in fda-products-kg medical-device-kg; do
+  echo "== /srv/$p: $(du -sh /srv/$p 2>/dev/null | cut -f1) on disk"
+  for pid in $(pgrep -f 'python3|java|bash .*\.sh|riot|shacl|lakectl' 2>/dev/null); do
+    [ "$pid" = "$$" ] && continue
+    cwd=$(readlink /proc/$pid/cwd 2>/dev/null); cmd=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null)
+    case "$cwd $cmd" in *"/srv/$p"*) ;; *) continue ;; esac
+    case "$cmd" in *vm-status*|*"sleep "*) continue ;; esac
+    ps -o etime=,pcpu=,rss= -p $pid | awk -v pid=$pid -v cmd="${cmd:0:95}" '{printf "   pid %s  up %s  cpu %s%%  rss %.1f GB  %s\n",pid,$1,$2,$3/1024/1024,cmd}'
+  done
+  for l in $(ls -t /srv/$p/logs/*.log 2>/dev/null | head -3); do
+    if tail -1 "$l" | grep -q '^DONE'; then s=done; else s=running-or-stopped; fi
+    echo "   log $(basename $l): $s, last write $(date -r "$l" '+%F %H:%M')"
+  done
+done
