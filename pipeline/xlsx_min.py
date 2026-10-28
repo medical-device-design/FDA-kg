@@ -34,13 +34,24 @@ def _serial_to_date(v):
     return v
 
 
+def _shared_strings(z):
+    """Shared-string table, streamed (large exports such as the DMF list have hundreds of
+    thousands of strings; a full DOM of the table and the sheet needs several GB)."""
+    shared = []
+    if "xl/sharedStrings.xml" not in z.namelist():
+        return shared
+    SI, T = "{%s}si" % NS["m"], "{%s}t" % NS["m"]
+    with z.open("xl/sharedStrings.xml") as fh:
+        for _ev, el in ET.iterparse(fh):
+            if el.tag == SI:
+                shared.append("".join(t.text or "" for t in el.iter(T)))
+                el.clear()
+    return shared
+
+
 def rows(path, sheet="xl/worksheets/sheet1.xml"):
     with zipfile.ZipFile(path) as z:
-        shared = []
-        if "xl/sharedStrings.xml" in z.namelist():
-            root = ET.fromstring(z.read("xl/sharedStrings.xml"))
-            for si in root.findall("m:si", NS):
-                shared.append("".join(t.text or "" for t in si.iter("{%s}t" % NS["m"])))
+        shared = _shared_strings(z)
         date_styles = set()
         if "xl/styles.xml" in z.namelist():
             st = ET.fromstring(z.read("xl/styles.xml"))
@@ -52,8 +63,11 @@ def rows(path, sheet="xl/worksheets/sheet1.xml"):
                     code = numfmts.get(fid, "")
                     if fid in {"14", "15", "16", "17", "22"} or re.search(r"[dy]", code.lower()) and "m" in code.lower():
                         date_styles.add(str(i))
-        root = ET.fromstring(z.read(sheet))
-        for row in root.iter("{%s}row" % NS["m"]):
+        ROW = "{%s}row" % NS["m"]
+        fh = z.open(sheet)
+        for _ev, row in ET.iterparse(fh):
+            if row.tag != ROW:
+                continue
             out = []
             for c in row.findall("m:c", NS):
                 idx = _col_index(c.get("r"))
@@ -72,7 +86,9 @@ def rows(path, sheet="xl/worksheets/sheet1.xml"):
                 else:
                     val = None
                 out.append(val.strip() if isinstance(val, str) and val.strip() else (val if val not in ("",) else None))
+            row.clear()
             yield out
+        fh.close()
 
 
 def dict_rows(path, header_row=0, **kw):
