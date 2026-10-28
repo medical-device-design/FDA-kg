@@ -128,6 +128,19 @@ RECORDS = {
                                    extra=['sh:property [ sh:path ex:safetyreportid ; sh:minCount 1 ; sh:maxCount 1 ]']),
         # MedDRA preferred-term text never reaches the published file (built with --publish)
         "FaersReaction": dict(prov=False, label=False, extra=['sh:property [ sh:path ex:reactionmeddrapt ; sh:maxCount 0 ]']),
+        # VAERS (vaers.hhs.gov CSVs); symptom-set rows lose the five MedDRA term columns under --publish
+        "VaersReport": dict(dates=["ex:recvdate", "ex:rptDate", "ex:datedied", "ex:vaxDate", "ex:onsetDate", "ex:todaysDate"],
+                            extra=['sh:property [ sh:path ex:vaersId ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        "VaersVaccination": dict(links={"ex:report": (E, "vaers-report")},
+                                 extra=['sh:property [ sh:path ex:report ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        "VaersSymptomSet": dict(links={"ex:report": (E, "vaers-report")},
+                                extra=['sh:property [ sh:path ex:report ; sh:minCount 1 ; sh:maxCount 1 ]',
+                                       'sh:property [ sh:path ex:termCount ; sh:minCount 1 ; sh:datatype xsd:integer ]',
+                                       'sh:property [ sh:path ex:symptom1 ; sh:maxCount 0 ]',
+                                       'sh:property [ sh:path ex:symptom2 ; sh:maxCount 0 ]',
+                                       'sh:property [ sh:path ex:symptom3 ; sh:maxCount 0 ]',
+                                       'sh:property [ sh:path ex:symptom4 ; sh:maxCount 0 ]',
+                                       'sh:property [ sh:path ex:symptom5 ; sh:maxCount 0 ]']),
     },
     T: {
         "TobaccoProblemReport": dict(dates=["ex:dateSubmitted"],
