@@ -14,7 +14,9 @@ fields are removed, so nothing licensed can reach lakeFS before the licence
 decision (handoff section 3).
 
 Usage:
-  python3 l1_openfda_any.py <product/endpoint> <snapshot_dir> <out.ttl> [--publish] [--limit N]
+  python3 l1_openfda_any.py <product/endpoint> <snapshot_dir> <out.ttl> [--publish] [--limit N] [--from-zip NAME]
+  --from-zip NAME resumes at that partition (sorted file names) and converts it and every later one,
+  for a second output file after an interrupted run; the earlier file stays as it is.
 """
 import gzip
 import re
@@ -281,7 +283,7 @@ SEARCH_FIELD = {"drug/drugsfda": "application_number", "drug/ndc": "product_id",
                 "animalandveterinary/event": "unique_aer_id_number"}
 
 
-def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None):
+def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None, from_zip=None):
     cfg = ENDPOINTS[endpoint]
     snap = Path(snapshot_dir)
     stamp = snap.name
@@ -290,6 +292,12 @@ def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None):
     zips = sorted(snap.glob("*.json.zip"))
     if not zips:
         raise SystemExit(f"no partition zips in {snap}")
+    if from_zip:                                    # resume: this partition and every later one (sorted names)
+        names = [z.name for z in zips]
+        if from_zip not in names:
+            raise SystemExit(f"{from_zip} is not a partition in {snap}")
+        zips = zips[names.index(from_zip):]
+        print(f"resuming at {from_zip}: {len(zips)} of {len(names)} partitions", file=sys.stderr)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     n = skipped = seen_dup = 0
@@ -340,4 +348,5 @@ if __name__ == "__main__":
     if len(sys.argv) < 4 or sys.argv[1] not in ENDPOINTS:
         raise SystemExit(__doc__ + "\nendpoints: " + ", ".join(ENDPOINTS))
     lim = int(sys.argv[sys.argv.index("--limit") + 1]) if "--limit" in sys.argv else None
-    convert(sys.argv[1], sys.argv[2], sys.argv[3], publish="--publish" in sys.argv, limit=lim)
+    frm = sys.argv[sys.argv.index("--from-zip") + 1] if "--from-zip" in sys.argv else None
+    convert(sys.argv[1], sys.argv[2], sys.argv[3], publish="--publish" in sys.argv, limit=lim, from_zip=frm)
