@@ -24,6 +24,8 @@ D, C, S, F, A, T = ("fda-drug-biologic-kg", "fda-compliance-kg", "fda-substance-
                     "fda-food-cosmetic-kg", "fda-animal-health-kg", "fda-tobacco-kg")
 E = "fda-drug-event-kg"
 
+_MEDDRA_CODE = 'sh:property [ sh:path ex:meddraCode ; sh:minCount 1 ; sh:maxCount 1 ; sh:pattern "^[0-9]{8}$" ]'
+
 # graph -> {class: dict(links={pred: (graph, kind)}, dates=[...], extra=[raw property shapes])}
 RECORDS = {
     C: {
@@ -199,6 +201,25 @@ RECORDS = {
                                        'sh:property [ sh:path ex:symptom3 ; sh:maxCount 0 ]',
                                        'sh:property [ sh:path ex:symptom4 ; sh:maxCount 0 ]',
                                        'sh:property [ sh:path ex:symptom5 ; sh:maxCount 0 ]']),
+        # MedDRA hierarchy (l1_meddra.py): licensed, VM-only file; shapes kept here so it is validated like the rest
+        "MeddraSoc": dict(links={"ex:hasHlgt": (E, "meddra-hlgt")}, extra=[_MEDDRA_CODE]),
+        "MeddraHlgt": dict(links={"ex:hasSoc": (E, "meddra-soc"), "ex:hasHlt": (E, "meddra-hlt")}, extra=[_MEDDRA_CODE]),
+        "MeddraHlt": dict(links={"ex:hasHlgt": (E, "meddra-hlgt"), "ex:hasPt": (E, "meddra-pt")}, extra=[_MEDDRA_CODE]),
+        "MeddraPt": dict(links={"ex:primarySoc": (E, "meddra-soc"), "ex:hasHlt": (E, "meddra-hlt"), "ex:hasLlt": (E, "meddra-llt")},
+                         extra=[_MEDDRA_CODE, 'sh:property [ sh:path ex:primarySoc ; sh:minCount 1 ; sh:maxCount 1 ]']),
+        "MeddraLlt": dict(links={"ex:hasPt": (E, "meddra-pt")},
+                          extra=[_MEDDRA_CODE, 'sh:property [ sh:path ex:lltCurrency ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ("Y" "N") ]']),
+        "MeddraHierarchyPath": dict(links={"ex:hasPt": (E, "meddra-pt"), "ex:hasHlt": (E, "meddra-hlt"),
+                                           "ex:hasHlgt": (E, "meddra-hlgt"), "ex:hasSoc": (E, "meddra-soc")},
+                                    extra=['sh:property [ sh:path ex:primarySocFlag ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ("Y" "N") ]']),
+        "MeddraSmq": dict(links={"ex:hasMember": (E, "meddra-smq")},
+                          extra=[_MEDDRA_CODE, 'sh:property [ sh:path ex:status ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ("A" "I") ]',
+                                 'sh:property [ sh:path ex:smqLevel ; sh:minCount 1 ; sh:datatype xsd:integer ]']),
+        "MeddraSmqMember": dict(links={"ex:smq": (E, "meddra-smq")},
+                                extra=['sh:property [ sh:path ex:term ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ]',
+                                       'sh:property [ sh:path ex:termScope ; sh:minCount 1 ; sh:datatype xsd:integer ]',
+                                       'sh:property [ sh:path ex:termStatus ; sh:minCount 1 ; sh:in ("A" "I") ]']),
+        "MeddraHistoryEntry": dict(extra=['sh:property [ sh:path ex:action ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ("A" "U" "D") ]']),
     },
     T: {
         "TobaccoProblemReport": dict(dates=["ex:dateSubmitted"],
