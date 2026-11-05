@@ -1,0 +1,5 @@
+# CAERS: the restored reaction text, most frequent terms for dietary supplements (industry code 54)
+PREFIX f: <https://bmedesign.org/fda-food-cosmetic-kg/ns/>
+SELECT ?reaction (COUNT(DISTINCT ?r) AS ?reports) WHERE {
+  ?r a f:CaersReport ; f:reactions ?reaction ; f:products ?p . ?p f:industryCode "54"
+} GROUP BY ?reaction ORDER BY DESC(?reports) LIMIT 15

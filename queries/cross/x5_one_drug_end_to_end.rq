@@ -1,0 +1,14 @@
+# One application end to end: the five applications with the most Orange Book / NDC products,
+# then their labels, NDC packages, substances and compliance recalls of those substances
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?app ?appLabel ?products (COUNT(DISTINCT ?lab) AS ?labels) (COUNT(DISTINCT ?pkg) AS ?packages) (COUNT(DISTINCT ?sub) AS ?substances) (COUNT(DISTINCT ?rec) AS ?recallsOfSubstance) WHERE {
+  { SELECT ?app (COUNT(DISTINCT ?prod) AS ?products) WHERE {
+      ?prod a d:DrugProduct ; d:hasApplication ?app . ?app a d:DrugApplication }
+    GROUP BY ?app ORDER BY DESC(?products) LIMIT 5 }
+  OPTIONAL { ?app rdfs:label ?appLabel }
+  OPTIONAL { ?lab a d:DrugLabel ; d:hasApplication ?app }
+  OPTIONAL { ?pkg a d:NdcPackage ; d:hasApplication ?app }
+  OPTIONAL { ?app d:hasSubstance ?sub . OPTIONAL { ?rec a c:Recall ; c:hasSubstance ?sub } }
+} GROUP BY ?app ?appLabel ?products ORDER BY DESC(?products)

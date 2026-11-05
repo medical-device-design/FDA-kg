@@ -1,0 +1,8 @@
+# How many establishment records of each class resolve to a Firm node (stub or Dashboard-listed)
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?class (COUNT(DISTINCT ?e) AS ?records) (COUNT(DISTINCT ?firm) AS ?firmsLinked) (SUM(IF(BOUND(?stub), 1, 0)) AS ?toStubFirms) WHERE {
+  ?e a ?class ; d:hasFirm ?firm .
+  FILTER(?class IN (d:DrugEstablishment, d:BloodEstablishment, d:HctpEstablishment))
+  OPTIONAL { ?firm c:isStub ?stub }
+} GROUP BY ?class

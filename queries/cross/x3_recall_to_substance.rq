@@ -1,0 +1,9 @@
+# Drug recall -> ingredient substance in fda-substance-kg (label and CAS from GSRS)
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX s: <https://bmedesign.org/fda-substance-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?substanceLabel ?cas (COUNT(DISTINCT ?r) AS ?drugRecalls) (SAMPLE(?reason) AS ?exampleReason) WHERE {
+  ?r a c:Recall ; c:hasSubstance ?sub ; c:reasonForRecall ?reason .
+  ?sub rdfs:label ?substanceLabel .
+  OPTIONAL { ?sub s:casNumber ?cas }
+} GROUP BY ?substanceLabel ?cas ORDER BY DESC(?drugRecalls) LIMIT 15

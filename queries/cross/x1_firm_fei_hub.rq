@@ -1,0 +1,10 @@
+# Cross-graph: FEI firm node in fda-compliance-kg joined to the drug and biologic establishments that point at it
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?fei ?firmLabel (COUNT(DISTINCT ?est) AS ?drugEstablishments) (COUNT(DISTINCT ?insp) AS ?inspections) (COUNT(DISTINCT ?act) AS ?complianceActions) WHERE {
+  ?firm a c:Firm ; c:feiNumber ?fei ; rdfs:label ?firmLabel .
+  ?est a d:DrugEstablishment ; d:hasFirm ?firm .
+  OPTIONAL { ?insp a c:Inspection ; c:hasFirm ?firm }
+  OPTIONAL { ?act a c:ComplianceAction ; c:hasFirm ?firm }
+} GROUP BY ?fei ?firmLabel ORDER BY DESC(?complianceActions) DESC(?inspections) LIMIT 15

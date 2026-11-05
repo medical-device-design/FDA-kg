@@ -1,0 +1,6 @@
+# Food ingredient inventories -> fda-substance-kg by CAS: which inventories list the same substance
+PREFIX f: <https://bmedesign.org/fda-food-cosmetic-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?substanceLabel (COUNT(DISTINCT ?class) AS ?inventories) (GROUP_CONCAT(DISTINCT STRAFTER(STR(?class), "ns/"); separator=", ") AS ?classes) WHERE {
+  ?x a ?class ; f:hasSubstance ?sub . ?sub rdfs:label ?substanceLabel
+} GROUP BY ?substanceLabel HAVING (COUNT(DISTINCT ?class) >= 3) ORDER BY DESC(?inventories) LIMIT 15

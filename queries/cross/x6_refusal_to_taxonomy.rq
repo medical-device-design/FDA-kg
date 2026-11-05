@@ -1,0 +1,7 @@
+# Import refusals by industry, through the product code taxonomy
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?industryDesc (COUNT(DISTINCT ?ref) AS ?refusals) (COUNT(DISTINCT ?firm) AS ?firms) WHERE {
+  ?ref a c:ImportRefusal ; c:hasImportIndustry ?ind .
+  ?ind c:description ?industryDesc .
+  OPTIONAL { ?ref c:hasFirm ?firm }
+} GROUP BY ?industryDesc ORDER BY DESC(?refusals) LIMIT 15

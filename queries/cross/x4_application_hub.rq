@@ -1,0 +1,11 @@
+# One application IRI seen from every source that names it: Drugs@FDA, NDC, Orange Book, Purple Book, labels, shortages, CRLs
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+SELECT ?source (COUNT(DISTINCT ?app) AS ?applications) WHERE {
+  { ?x a d:NdcProduct ; d:hasApplication ?app . BIND("NDC product" AS ?source) }
+  UNION { ?x a d:OrangeBookProduct ; d:hasApplication ?app . BIND("Orange Book product" AS ?source) }
+  UNION { ?x a d:PurpleBookProduct ; d:hasApplication ?app . BIND("Purple Book product" AS ?source) }
+  UNION { ?x a d:DrugLabel ; d:hasApplication ?app . BIND("SPL label" AS ?source) }
+  UNION { ?x a d:CompleteResponseLetter ; d:hasApplication ?app . BIND("complete response letter" AS ?source) }
+  UNION { ?x a d:NdcPackage ; d:hasApplication ?app . BIND("NDC package" AS ?source) }
+  UNION { ?x a d:Submission ; d:hasApplication ?app . BIND("Drugs@FDA submission" AS ?source) }
+} GROUP BY ?source ORDER BY DESC(?applications)
