@@ -24,8 +24,7 @@ shp:AdverseEventReportShape a sh:NodeShape ;
     sh:property [ sh:path ex:safetyreportid ; sh:minCount 1 ; sh:maxCount 1 ] .
 
 shp:FaersReactionShape a sh:NodeShape ;
-    sh:targetClass ex:FaersReaction ;
-    sh:property [ sh:path ex:reactionmeddrapt ; sh:maxCount 0 ] .
+    sh:targetClass ex:FaersReaction .
 
 shp:VaersReportShape a sh:NodeShape ;
     sh:targetClass ex:VaersReport ;
@@ -70,12 +69,7 @@ shp:VaersSymptomSetShape a sh:NodeShape ;
     ) ;
     sh:property [ sh:path ex:report ; sh:nodeKind sh:IRI ; sh:pattern "^https://bmedesign.org/fda-drug-event-kg/id/vaers-report/" ] ;
     sh:property [ sh:path ex:report ; sh:minCount 1 ; sh:maxCount 1 ] ;
-    sh:property [ sh:path ex:termCount ; sh:minCount 1 ; sh:datatype xsd:integer ] ;
-    sh:property [ sh:path ex:symptom1 ; sh:maxCount 0 ] ;
-    sh:property [ sh:path ex:symptom2 ; sh:maxCount 0 ] ;
-    sh:property [ sh:path ex:symptom3 ; sh:maxCount 0 ] ;
-    sh:property [ sh:path ex:symptom4 ; sh:maxCount 0 ] ;
-    sh:property [ sh:path ex:symptom5 ; sh:maxCount 0 ] .
+    sh:property [ sh:path ex:termCount ; sh:minCount 1 ; sh:datatype xsd:integer ] .
 
 shp:MeddraSocShape a sh:NodeShape ;
     sh:targetClass ex:MeddraSoc ;
