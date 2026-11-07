@@ -1,0 +1,8 @@
+# VAERS: three 2024 reports with their vaccinations and symptom text, back-links through e:report
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?r (SAMPLE(?a) AS ?age) (SAMPLE(?st) AS ?state) (COUNT(DISTINCT ?v) AS ?vaccinations) (GROUP_CONCAT(DISTINCT ?t; separator=" | ") AS ?symptoms) WHERE {
+  { SELECT ?r WHERE { ?r a e:VaersReport ; e:recvdate ?d . FILTER(YEAR(?d) = 2024) } ORDER BY ?r LIMIT 3 }
+  OPTIONAL { ?r e:ageYrs ?a } OPTIONAL { ?r e:state ?st }
+  OPTIONAL { ?v a e:VaersVaccination ; e:report ?r }
+  OPTIONAL { ?s a e:VaersSymptomSet ; e:report ?r . { ?s e:symptom1 ?t } UNION { ?s e:symptom2 ?t } UNION { ?s e:symptom3 ?t } }
+} GROUP BY ?r

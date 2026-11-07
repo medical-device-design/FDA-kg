@@ -1,0 +1,5 @@
+# VAERS reports by receive year
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?year (COUNT(DISTINCT ?r) AS ?reports) WHERE {
+  ?r a e:VaersReport ; e:recvdate ?d . BIND(YEAR(?d) AS ?year)
+} GROUP BY ?year ORDER BY ?year

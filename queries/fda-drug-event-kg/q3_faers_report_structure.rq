@@ -1,0 +1,7 @@
+# FAERS: three reports with their patient node, drug and reaction counts (forward links report -> patient -> drug/reaction)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?r (SAMPLE(?s) AS ?serious) (SAMPLE(?d) AS ?received) (SAMPLE(?sx) AS ?patientSex) (COUNT(DISTINCT ?drug) AS ?drugs) (COUNT(DISTINCT ?rx) AS ?reactions) (GROUP_CONCAT(DISTINCT ?term; separator=" | ") AS ?reactionText) WHERE {
+  { SELECT ?r WHERE { ?r a e:AdverseEventReport } ORDER BY ?r LIMIT 3 }
+  OPTIONAL { ?r e:serious ?s } OPTIONAL { ?r e:receivedate ?d }
+  OPTIONAL { ?r e:patient ?pt . OPTIONAL { ?pt e:patientsex ?sx } OPTIONAL { ?pt e:drug ?drug } OPTIONAL { ?pt e:reaction ?rx . OPTIONAL { ?rx e:reactionmeddrapt ?term } } }
+} GROUP BY ?r

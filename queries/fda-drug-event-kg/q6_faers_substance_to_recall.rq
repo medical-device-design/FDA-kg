@@ -1,0 +1,9 @@
+# Three hops across three graphs: FAERS report -> substance (UNII) -> compliance recalls of that substance
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?sub (SAMPLE(?label) AS ?substance) (COUNT(DISTINCT ?r) AS ?faersReports) (COUNT(DISTINCT ?rec) AS ?recalls) WHERE {
+  ?r a e:AdverseEventReport ; e:hasSubstance ?sub .
+  ?rec a c:Recall ; c:hasSubstance ?sub .
+  OPTIONAL { ?sub rdfs:label ?label }
+} GROUP BY ?sub ORDER BY DESC(?faersReports) LIMIT 15

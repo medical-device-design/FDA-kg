@@ -1,0 +1,8 @@
+# Cross-graph: FAERS reports that name an application (openfda block) joined to the Drugs@FDA application node
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?app ?appLabel (COUNT(DISTINCT ?r) AS ?reports) WHERE {
+  ?r a e:AdverseEventReport ; e:hasApplication ?app .
+  ?app a d:DrugApplication . OPTIONAL { ?app rdfs:label ?appLabel }
+} GROUP BY ?app ?appLabel ORDER BY DESC(?reports) LIMIT 15

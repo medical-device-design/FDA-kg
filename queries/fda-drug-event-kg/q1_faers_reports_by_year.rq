@@ -1,0 +1,5 @@
+# FAERS reports by receive year (sample in the local store, full graph on FRINK)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?year (COUNT(DISTINCT ?r) AS ?reports) WHERE {
+  ?r a e:AdverseEventReport ; e:receivedate ?d . BIND(YEAR(?d) AS ?year)
+} GROUP BY ?year ORDER BY ?year

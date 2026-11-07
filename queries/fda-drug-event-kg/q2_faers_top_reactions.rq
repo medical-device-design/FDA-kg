@@ -1,0 +1,5 @@
+# FAERS: most frequent reaction terms (restored FDA-published MedDRA PT text, l2_term_text_faers)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?term (COUNT(?x) AS ?reactions) WHERE {
+  ?x a e:FaersReaction ; e:reactionmeddrapt ?term
+} GROUP BY ?term ORDER BY DESC(?reactions) LIMIT 15

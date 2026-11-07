@@ -1,0 +1,10 @@
+# Cross-graph: how many sampled FAERS reports link to applications, package NDCs and substances, and how many of those targets exist as nodes
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+PREFIX d: <https://bmedesign.org/fda-drug-biologic-kg/ns/>
+PREFIX s: <https://bmedesign.org/fda-substance-kg/ns/>
+SELECT ?link (COUNT(DISTINCT ?r) AS ?reports) (COUNT(DISTINCT ?t) AS ?targets) (COUNT(DISTINCT ?typed) AS ?targetsWithClass) WHERE {
+  { ?r e:hasApplication ?t . BIND("application" AS ?link) OPTIONAL { ?t a d:DrugApplication . BIND(?t AS ?typed) } }
+  UNION { ?r e:hasPackageNdc ?t . BIND("package NDC" AS ?link) OPTIONAL { ?t a d:NdcPackage . BIND(?t AS ?typed) } }
+  UNION { ?r e:hasSubstance ?t . BIND("substance (UNII)" AS ?link) OPTIONAL { ?t a s:Substance . BIND(?t AS ?typed) } }
+  ?r a e:AdverseEventReport .
+} GROUP BY ?link

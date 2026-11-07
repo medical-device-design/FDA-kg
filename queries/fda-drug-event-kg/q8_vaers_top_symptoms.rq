@@ -1,0 +1,5 @@
+# VAERS: most frequent symptom terms (restored text, l2_term_text_vaers, SYMPTOM1 to SYMPTOM5)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?term (COUNT(*) AS ?mentions) WHERE {
+  ?s a e:VaersSymptomSet . { ?s e:symptom1 ?term } UNION { ?s e:symptom2 ?term } UNION { ?s e:symptom3 ?term } UNION { ?s e:symptom4 ?term } UNION { ?s e:symptom5 ?term }
+} GROUP BY ?term ORDER BY DESC(?mentions) LIMIT 15

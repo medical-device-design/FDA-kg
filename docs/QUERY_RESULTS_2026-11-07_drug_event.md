@@ -1,0 +1,68 @@
+# Query validation of fda-drug-event-kg (FAERS sample), November 7, 2026
+
+Follow-up to `QUERY_RESULTS_2026-11-05.md`, which covered the six smaller graphs. This run puts a
+contiguous FAERS sample into the same TDB2 dataset as the named graph
+`https://purl.org/okn/frink/kg/fda-drug-event-kg` and runs the first queries against it, including
+joins into fda-drug-biologic-kg, fda-substance-kg and fda-compliance-kg. VAERS was not loaded
+(see "Not done"). Script: `scripts/test_drug_event.sh` (VM only); queries: `queries/fda-drug-event-kg/`.
+
+## Sample
+
+The first 7.0 GB of the uncompressed `drug_event.ttl.gz` stream (the file is written one report at
+a time, so this is 187,643 complete reports, receive dates 2001 to 2012, mostly 2004 and 2005),
+cut at the last record boundary, plus the reaction text for exactly those reports filtered out of
+`l2_term_text_faers.ttl.gz` (624,521 texts for 623,962 FaersReaction nodes). 122.9 M triples,
+44 GB in TDB2 (0.36 GB per million triples, as on November 5; the 20 GB estimate was wrong).
+Nodes: 187,642 AdverseEventReport, 187,642 FaersPatient, 630,032 FaersDrug, 623,962 FaersReaction,
+362,850 FaersOpenfda, 13,983 FaersPatientdeath. Provenance: `drug/event`, retrieved 2026-10-27.
+
+## Results
+
+| Query | Result | Time |
+|---|---|---|
+| q1 reports by receive year | 2001 1, 2002 6, 2003 6, 2004 154,693, 2005 29,219, 2006 1,825 ... 2012 38 | 18 s |
+| q2 top reaction terms (restored text) | NAUSEA 9,006, DRUG INEFFECTIVE 7,573, DIZZINESS 6,801, HEADACHE 6,354, VOMITING 6,028, DYSPNOEA 5,942, DEATH 5,526 | 22 s |
+| q3 report structure, three reports | report -> patient -> drug and reaction nodes resolve; reaction text attached; serious flag and dates typed | 6 s |
+| q4 FAERS to Drugs@FDA application | NDA021318 (Lilly) 6,558 reports, NDA016273 5,547, BLA125057 (AbbVie) 5,350; a run of ANDAs at 5,026 each are the prednisone applications: openFDA's harmonized block lists every application for a generic, so one report links to all of them, which is faithful to the source | 49 s |
+| q5 link rates | application: 138,454 reports, 8,511 targets, all typed DrugApplication. package NDC: 140,318 reports, 89,849 targets, 89,847 typed (2 package NDCs have no node). substance (UNII): 137,843 reports, 1,773 targets, all typed Substance | 564 s |
+| q6 three hops FAERS -> substance -> recalls | aspirin 7,615 reports, 5 recalls; furosemide 5,547, 7; levothyroxine 5,378, 108; acetaminophen 4,980, 52; atorvastatin 4,824, 46 | 89 s |
+| Q0 class counts, Q0b provenance | as above | 51 s, 28 s |
+
+Three sampled reports (first, middle, last) against the live openFDA API on November 7: receive
+date, serious flag, drug count, reaction count and the reaction terms are identical for all three
+(3749714: 3 drugs, 6 reactions, "Gastric cancer; Lethargy; Rash; Weight decreased; Autoimmune
+disorder; Depression"; 4437265-6: 6 drugs, 1 reaction "DYSPHAGIA"; 8473122-6: 1 drug, 2 reactions
+"PHARYNGEAL OEDEMA; CHEST DISCOMFORT"). Safety report ids with a suffix ("4437265-6") are slugged
+to "4437265_6" in the IRI and kept verbatim in `ex:safetyreportid`.
+
+## What this shows
+
+- The FAERS L1 structure queries correctly: report, patient, drug, reaction and openfda nodes,
+  typed dates, serious flags, and the restored MedDRA PT text on the reaction nodes.
+- FAERS joins to the other graphs through the three keys the L1 pass lifted from the openfda
+  block: application IRIs (100 % resolve to Drugs@FDA nodes), package NDCs (99.998 %), UNIIs
+  (100 % resolve to GSRS substances). From a substance the compliance recalls are one more hop.
+- Answers match the live API record for record.
+
+## Caveats and lessons
+
+- This is 0.9 % of FAERS (187,643 of 20.7 M reports), the oldest reports in file order. The
+  structure is the same throughout (the streaming full-coverage check of November 3 covered every
+  block), but counts here are not FAERS counts.
+- Two package NDC IRIs referenced by sampled reports have no NdcPackage node; the stub pass was
+  run on the full file, so these two are worth a look (probably a formatting variant).
+- Two queries (q3, q10) failed on the first pass with "variable already in scope" because an
+  aggregate reused its input variable name; fixed. q7 to q10 (VAERS) return no rows until VAERS
+  is loaded.
+- Disk: the device project's new dataset left 205 GB free on the shared volume on the morning of
+  November 7, and the sample took 44 GB, so the volume ended at 152 GB free with our test store at
+  186 GB. VAERS (about 80 GB) was not loaded for that reason. The test store can be deleted when
+  the PI says so.
+- Procedure: a second copy of the test was started by mistake and killed within a minute (nothing
+  reached the store), and one run died after its load because the script file was replaced while
+  it was executing. Both are in the logs (`logs/test_drug_event_run*.log`).
+
+## Not done
+
+- VAERS queries (q7 to q10): needs about 80 GB that the shared volume does not have right now.
+- The join to the Medical Device Design KG endpoint.

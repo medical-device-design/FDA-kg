@@ -1,0 +1,5 @@
+# VAERS: vaccinations by manufacturer and vaccine type
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?manu ?type (COUNT(?v) AS ?vaccinations) WHERE {
+  ?v a e:VaersVaccination ; e:vaxManu ?manu ; e:vaxType ?type
+} GROUP BY ?manu ?type ORDER BY DESC(?vaccinations) LIMIT 15
