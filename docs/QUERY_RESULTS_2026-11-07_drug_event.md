@@ -3,8 +3,8 @@
 Follow-up to `QUERY_RESULTS_2026-11-05.md`, which covered the six smaller graphs. This run puts a
 contiguous FAERS sample into the same TDB2 dataset as the named graph
 `https://purl.org/okn/frink/kg/fda-drug-event-kg` and runs the first queries against it, including
-joins into fda-drug-biologic-kg, fda-substance-kg and fda-compliance-kg. VAERS was not loaded
-(see "Not done"). Script: `scripts/test_drug_event.sh` (VM only); queries: `queries/fda-drug-event-kg/`.
+joins into fda-drug-biologic-kg, fda-substance-kg and fda-compliance-kg. VAERS was not loaded in
+this first pass; it was loaded and queried in full later the same day (see the addendum). Script: `scripts/test_drug_event.sh` (VM only); queries: `queries/fda-drug-event-kg/`.
 
 ## Sample
 
@@ -64,5 +64,41 @@ to "4437265_6" in the IRI and kept verbatim in `ex:safetyreportid`.
 
 ## Not done
 
-- VAERS queries (q7 to q10): needs about 80 GB that the shared volume does not have right now.
+- VAERS queries (q7 to q10): done at 11:21 after the six-graph store was deleted, see the addendum.
 - The join to the Medical Device Design KG endpoint.
+
+## Addendum, November 7, 2026, 11:21: VAERS queried in full
+
+After the six-graph test store was archived (small files to the PI's archive drive) and deleted
+with the PI's word, VAERS was loaded alone: `vaers.ttl.gz` plus `l2_term_text_vaers.ttl.gz`,
+217,124,266 triples (exactly the two files' totals), 9 minutes, 56 GB (`scripts/test_vaers.sh`,
+store `tdb2_vaers`). Six queries, all returned rows:
+
+| Query | Result | Time |
+|---|---|---|
+| Q0 nodes per class | VaersVaccination 2,811,621, VaersSymptomSet 2,811,342, VaersReport 2,736,357 | 147 s |
+| Q0b provenance | 114 source files (38 years x DATA, SYMPTOMS, VAX), all retrieved 2026-10-27 | 155 s |
+| q7 reports by receive year | 1990 2,151 ... 2020 58,165, 2021 1,063,444, 2022 528,611, 2023 158,021, 2024 86,528, 2025 57,192, 2026 25,267 | 81 s |
+| q8 top symptom text | Pyrexia 363,530, Headache 317,398, Fatigue 260,651, SARS-CoV-2 test 250,215, Pain 228,436, COVID-19 227,284 | 107 s |
+| q9 vaccinations by manufacturer and type | PFIZER\BIONTECH COVID19 995,749, MODERNA COVID19 560,198, JANSSEN COVID19 102,550, MERCK VARCEL 89,051, GSK VARZOS 87,780 | 61 s |
+| q10 three 2024 reports | report, age, state, vaccination count and symptom text all resolve through the `e:report` back-links | 34 s |
+
+Check against the raw CSVs (`VAERSDATA.csv` in the two snapshot zips, read directly):
+
+- Rows: 2,811,621 across the yearly files and the NonDomestic file. Distinct VAERS_IDs: 2,736,357,
+  which is exactly the VaersReport node count. 51,278 rows repeat a VAERS_ID inside one file and
+  23,628 ids appear in more than one file (127 NonDomestic ids also in a yearly file); the IRI is
+  keyed by VAERS_ID, so these land on one node each, with every value kept.
+- Per year, graph vs raw rows: 1990 2,151 vs 2,214 (2,102 distinct ids in the 1990 file plus 49
+  reports from other files received in 1990), 2021 1,063,444 vs 768,704 domestic rows (the
+  rest are NonDomestic reports received in 2021). Consistent once the two effects are allowed for.
+- Correction to earlier documents: the "3,622,202 reports" figure was a row count that counted
+  the NonDomestic CSV twice, because `NonDomesticVAERSDATA.csv` is inside both snapshot zips
+  (`AllVAERSDataCSVS.zip` and `NonDomesticVAERSDATA.zip`) and the L1 build read both. The
+  triples it produced are identical, so any store deduplicates them and the graph is unaffected,
+  but the file total (200.9 M triples) includes that repeat and the next build should read the
+  NonDomestic CSV once. The correct figures: 2,736,357 distinct VAERS reports, 2,811,621 vaccination
+  rows, 2,811,342 symptom sets.
+
+With this, every one of the seven graphs has been queried: six in full, FAERS on a 0.9 % sample,
+VAERS in full. The VAERS store (56 GB) stays on the VM until the PI says otherwise.
