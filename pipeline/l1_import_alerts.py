@@ -12,6 +12,7 @@ Records:
   import-alert/<number>/scope/<n>                     ex:ImportAlertProductScope   country + product code/name/desc/problems
   import-alert/<number>/<red|yellow|green>/<sha1>     ex:ImportAlertFirm    firm name, address, country, list color,
                                                                             date published; ex:alert back-link
+                                                      (<sha1>-2, -3 ... when the same firm is listed again in that list)
   .../<sha1>/product/<n>                              ex:ImportAlertFirmProduct    product code, name, date published,
                                                                             description, notes, problems
 Firms are businesses on a public regulatory list; no person names appear on these pages. Every field
@@ -19,6 +20,7 @@ is kept as the page shows it (text untagged, whitespace collapsed).
 
 Usage: python3 l1_import_alerts.py <snapshot_dir> <out.ttl>
 """
+import collections
 import hashlib
 import html as htmlmod
 import re
@@ -141,6 +143,7 @@ def convert_page(path, w, stamp):
     color = country = None
     firm_iri = None
     pn = 0
+    seen_keys = collections.Counter()
     for t in _TOKEN.finditer(body[head_end:]):
         kind = t.lastgroup
         if kind == "section":
@@ -152,6 +155,13 @@ def convert_page(path, w, stamp):
             fm = _FIRM.search(t.group(0))
             fname, fdate, faddr = text(fm.group(1)), text(fm.group(2)), text(fm.group(3))
             key = hashlib.sha1(f"{number}|{color}|{country}|{fname}|{faddr}".encode()).hexdigest()[:20]
+            # The same firm (name and address) can be listed more than once in one list, with its own
+            # date and products each time (247 cases on the 2026-10-27 snapshot). The first entry keeps
+            # the plain hash; repeats get -2, -3 ... so their products do not merge into the first
+            # entry's product/1 (found November 8, 2026).
+            seen_keys[key] += 1
+            if seen_keys[key] > 1:
+                key = f"{key}-{seen_keys[key]}"
             firm_iri = f"{iri}/{color or 'list'}/{key}"
             pn = 0
             fp = [("a", "ex:ImportAlertFirm"), ("ex:alert", f"<{iri}>"), ("ex:listColor", common.lit(color)),
