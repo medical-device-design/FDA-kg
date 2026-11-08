@@ -11,6 +11,11 @@ Records (same graph as FAERS, the adverse-event graph):
   vaers-report/<VAERS_ID>                 ex:VaersReport        one per DATA row (all columns, dates typed)
   vaers-report/<VAERS_ID>/vax/<n>         ex:VaersVaccination   one per VAX row, ex:report back-link
   vaers-report/<VAERS_ID>/symptoms/<n>    ex:VaersSymptomSet    one per SYMPTOMS row (up to 5 terms), ex:report back-link
+  <n> is the row's 1-based sequence within its report in file order (VAX and SYMPTOMS files are
+  grouped by VAERS_ID). It is NOT the file's ORDER column: ORDER is "1" on 97 % of rows and
+  repeats within a report, so keying on it merged 633,307 vaccination rows and 963,605 symptom
+  rows into other rows' nodes in the November 3 build (found November 7, 2026). ORDER is kept as
+  ex:order on the node.
 
 MedDRA: SYMPTOM1..SYMPTOM5 are MedDRA preferred terms. With --publish those five text columns are
 dropped (SYMPTOMVERSION1..5 stay, so the row still says how many terms it carried and which MedDRA
@@ -19,6 +24,7 @@ VAERS publishes no reporter or patient identities, so nothing else is removed.
 
 Usage: python3 l1_vaers.py <snapshot_dir> <out.ttl[.gz]> [--publish]
 """
+import collections
 import csv
 import gzip
 import io
@@ -69,6 +75,8 @@ def convert(snap, out_path, publish):
     opener = (lambda p: gzip.open(p, "wt", encoding="utf-8", newline="\n", compresslevel=6)) \
         if str(out_path).endswith(".gz") else (lambda p: open(p, "w", encoding="utf-8", newline="\n"))
     counts = {"reports": 0, "vaccinations": 0, "symptom_sets": 0, "triples": 0, "files": 0}
+    seen = set()   # a member name is read once even if it sits in more than one zip
+    seq = collections.Counter()   # (VAERS_ID, kind) -> rows seen, the child IRI sequence
     with opener(out_path) as fh:
         fh.write(common.prefixes({"ex": fda_iri.ns(E)}) + "\n")
         for zpath in sorted(snap.glob("*.zip")):
@@ -78,6 +86,12 @@ def convert(snap, out_path, publish):
                     kind = re.sub(r"^(?:\d{4}|NonDomestic)VAERS", "", name, flags=re.I).upper().replace(".CSV", "")
                     if kind not in ("DATA", "VAX", "SYMPTOMS"):
                         continue
+                    if name in seen:
+                        # NonDomesticVAERS*.csv is inside both AllVAERSDataCSVS.zip and NonDomesticVAERSDATA.zip
+                        # (snapshot 2026-10-27); reading it twice wrote identical blocks twice (found November 7, 2026)
+                        print(f"  skip duplicate member {name} in {zpath.name}", file=sys.stderr)
+                        continue
+                    seen.add(name)
                     counts["files"] += 1
                     dataset = f"vaers/{name}"
                     rdr = csv.DictReader(open_member(zf, name))
@@ -94,7 +108,8 @@ def convert(snap, out_path, publish):
                             counts["triples"] += common.write_block(fh, f"<{riri}>", pairs)
                             counts["reports"] += 1
                         elif kind == "VAX":
-                            n = row.get("ORDER") or str(i)
+                            seq[(vid, "vax")] += 1
+                            n = str(seq[(vid, "vax")])
                             ciri = f"{riri}/vax/{fda_iri.slug(n)}"
                             pairs = [("a", "ex:VaersVaccination"), ("ex:report", f"<{riri}>")] + pairs_for(row, skip=("VAERS_ID",))
                             pairs.append(("rdfs:label", common.lit(f"{row.get('VAX_NAME') or row.get('VAX_TYPE') or 'vaccination'} (VAERS {vid})")))
@@ -102,7 +117,8 @@ def convert(snap, out_path, publish):
                             counts["triples"] += common.write_block(fh, f"<{ciri}>", pairs)
                             counts["vaccinations"] += 1
                         else:
-                            n = row.get("ORDER") or str(i)
+                            seq[(vid, "sym")] += 1
+                            n = str(seq[(vid, "sym")])
                             ciri = f"{riri}/symptoms/{fda_iri.slug(n)}"
                             skip = ("VAERS_ID",) + (tuple(MEDDRA_COLS) if publish else ())
                             terms = sum(1 for c in MEDDRA_COLS if row.get(c))

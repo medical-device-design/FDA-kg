@@ -1,6 +1,9 @@
-# Animal adverse events by species (counts check against openFDA count=animal.species.exact). A join to the Green Book is still to be written.
+# Animal adverse events by species (counts check against openFDA count=animal.species.exact).
+# Note (November 7, 2026): there is no identifier join from an animal event to a Green Book application.
+# openFDA's animal event drug block carries brand name, active ingredient names and manufacturer name only,
+# no application number, so an event-to-application join would be a name match, which is a later
+# identity layer, not an L1 link.
 PREFIX a: <https://bmedesign.org/fda-animal-health-kg/ns/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?species (COUNT(DISTINCT ?e) AS ?events) WHERE {
   ?e a a:AnimalEvent ; a:animal ?an . ?an a:species ?species
 } GROUP BY ?species ORDER BY DESC(?events) LIMIT 10

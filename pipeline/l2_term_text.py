@@ -76,8 +76,13 @@ def faers(snap, out, workers):
 
 
 def vaers(snap, out):
+    """Same member order, same duplicate-member skip and same per-report sequence as l1_vaers.py,
+    so the text lands on the node l1_vaers.py declared (November 7, 2026)."""
+    import collections
     import l1_vaers
     total = 0
+    seen = set()
+    seq = collections.Counter()
     with gzip.open(out, "wt", encoding="utf-8", newline="\n", compresslevel=6) as fh:
         fh.write(common.prefixes({"ex": fda_iri.ns(E)}) + "\n")
         for zpath in sorted(Path(snap).glob("*.zip")):
@@ -85,12 +90,16 @@ def vaers(snap, out):
                 for name in sorted(zf.namelist()):
                     if not re.search(r"VAERSSYMPTOMS\.csv$", name, re.I):
                         continue
+                    if name in seen:
+                        continue
+                    seen.add(name)
                     for i, row in enumerate(csv.DictReader(l1_vaers.open_member(zf, name))):
                         row = {k.strip(): (v.strip() if isinstance(v, str) else v) for k, v in row.items() if k}
                         vid = row.get("VAERS_ID")
                         if not vid:
                             continue
-                        n = row.get("ORDER") or str(i)
+                        seq[(vid, "sym")] += 1
+                        n = str(seq[(vid, "sym")])
                         pairs = [(f"ex:symptom{k}", common.lit(row.get(f"SYMPTOM{k}"))) for k in range(1, 6) if row.get(f"SYMPTOM{k}")]
                         if pairs:
                             total += common.write_block(fh, f"<{l1_vaers.report_iri(vid)}/symptoms/{fda_iri.slug(n)}>", pairs)

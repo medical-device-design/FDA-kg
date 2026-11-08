@@ -1,9 +1,10 @@
-# Drug recall -> ingredient substance in fda-substance-kg (label and CAS from GSRS)
+# Drug recall -> ingredient substance in fda-substance-kg, keyed by the substance IRI (UNII) so a GSRS
+# substance with two preferred-name spellings is one row (November 7, 2026 fix of the label-keyed version)
 PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
 PREFIX s: <https://bmedesign.org/fda-substance-kg/ns/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?substanceLabel ?cas (COUNT(DISTINCT ?r) AS ?drugRecalls) (SAMPLE(?reason) AS ?exampleReason) WHERE {
+SELECT ?sub (SAMPLE(?substanceLabel) AS ?substance) (SAMPLE(?cas) AS ?casNumber) (COUNT(DISTINCT ?r) AS ?drugRecalls) (SAMPLE(?reason) AS ?exampleReason) WHERE {
   ?r a c:Recall ; c:hasSubstance ?sub ; c:reasonForRecall ?reason .
-  ?sub rdfs:label ?substanceLabel .
+  OPTIONAL { ?sub rdfs:label ?substanceLabel }
   OPTIONAL { ?sub s:casNumber ?cas }
-} GROUP BY ?substanceLabel ?cas ORDER BY DESC(?drugRecalls) LIMIT 15
+} GROUP BY ?sub ORDER BY DESC(?drugRecalls) LIMIT 15
