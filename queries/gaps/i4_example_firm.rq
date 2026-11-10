@@ -1,0 +1,4 @@
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?f ?date (COUNT(?p) AS ?products) WHERE {
+  ?f a c:ImportAlertFirm ; c:firmName "Fromagerie Delin" ; c:alert <https://bmedesign.org/fda-compliance-kg/id/import-alert/12_03> ; c:datePublished ?date .
+  OPTIONAL { ?p c:firm ?f } } GROUP BY ?f ?date ORDER BY ?f

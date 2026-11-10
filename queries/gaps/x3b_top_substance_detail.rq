@@ -1,0 +1,4 @@
+# cross-check of x3 row 1: the recall numbers behind the top substance
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?sub (COUNT(DISTINCT ?r) AS ?n) (SAMPLE(?num) AS ?exampleRecall) WHERE { ?r a c:Recall ; c:hasSubstance ?sub . OPTIONAL { ?r c:recallNumber ?num } }
+GROUP BY ?sub ORDER BY DESC(?n) LIMIT 3

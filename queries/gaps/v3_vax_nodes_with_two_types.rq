@@ -1,0 +1,3 @@
+# collision symptom: a vaccination node carrying more than one vaxType (expected 0 after the fix)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT (COUNT(*) AS ?nodes) WHERE { SELECT ?v WHERE { ?v a e:VaersVaccination ; e:vaxType ?t } GROUP BY ?v HAVING (COUNT(DISTINCT ?t) > 1) }

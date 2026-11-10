@@ -1,0 +1,3 @@
+# collision symptom: a firm product node with more than one product code (expected 0 after the fix)
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT (COUNT(*) AS ?nodes) WHERE { SELECT ?p WHERE { ?p a c:ImportAlertFirmProduct ; c:productCode ?k } GROUP BY ?p HAVING (COUNT(DISTINCT ?k) > 1) }

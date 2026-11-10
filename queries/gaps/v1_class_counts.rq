@@ -1,0 +1,2 @@
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?c (COUNT(?s) AS ?n) WHERE { GRAPH <https://purl.org/okn/frink/kg/fda-drug-event-kg> { ?s a ?c } } GROUP BY ?c ORDER BY DESC(?n)

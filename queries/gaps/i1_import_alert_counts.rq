@@ -1,0 +1,2 @@
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT ?c (COUNT(?s) AS ?n) WHERE { VALUES ?c { c:ImportAlert c:ImportAlertProductScope c:ImportAlertFirm c:ImportAlertFirmProduct } ?s a ?c } GROUP BY ?c

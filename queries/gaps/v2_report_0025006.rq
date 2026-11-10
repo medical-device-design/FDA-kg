@@ -1,0 +1,6 @@
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT ?v ?type ?manu ?lot ?dose ?order WHERE {
+  ?v a e:VaersVaccination ; e:report <https://bmedesign.org/fda-drug-event-kg/id/vaers-report/0025006> .
+  OPTIONAL { ?v e:vaxType ?type } OPTIONAL { ?v e:vaxManu ?manu } OPTIONAL { ?v e:vaxLot ?lot }
+  OPTIONAL { ?v e:vaxDoseSeries ?dose } OPTIONAL { ?v e:order ?order }
+} ORDER BY ?v

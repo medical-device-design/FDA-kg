@@ -1,0 +1,3 @@
+# every symptom text from the L2 file lands on a declared VaersSymptomSet node (expected: orphans 0)
+PREFIX e: <https://bmedesign.org/fda-drug-event-kg/ns/>
+SELECT (COUNT(DISTINCT ?s) AS ?withText) (SUM(IF(EXISTS { ?s a e:VaersSymptomSet }, 0, 1)) AS ?orphans) WHERE { ?s e:symptom1 ?t }

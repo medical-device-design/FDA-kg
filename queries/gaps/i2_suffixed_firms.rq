@@ -1,0 +1,5 @@
+# repeat listings now separate (expected 265 firms, 1,261 products)
+PREFIX c: <https://bmedesign.org/fda-compliance-kg/ns/>
+SELECT (COUNT(DISTINCT ?f) AS ?suffixedFirms) (COUNT(DISTINCT ?p) AS ?theirProducts) WHERE {
+  ?f a c:ImportAlertFirm . FILTER(REGEX(STR(?f), "/[0-9a-f]{20}-[0-9]+$"))
+  OPTIONAL { ?p a c:ImportAlertFirmProduct ; c:firm ?f } }
