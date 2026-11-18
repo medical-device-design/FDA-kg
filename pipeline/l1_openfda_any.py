@@ -213,6 +213,10 @@ ENDPOINTS = {
         dates={"receivedate", "receiptdate", "transmissiondate", "drugstartdate", "drugenddate", "patientdeathdate"},
         links=_faers_links,
         licensed=lambda r: _strip(r, ("patient", "reaction", "reactionmeddrapt")),   # MedDRA PT text; codes and outcome kept
+        # openFDA serves 1,811 old AERS report ids twice (two transmissions, no version number).
+        # Each copy keeps its own node: the n-th copy in sorted partition order is report/<id>-n
+        # (November 18, 2026), so the values of two copies never merge on one node.
+        split_repeats=True,
     ),
     "food/event": dict(
         graph=F, cls="CaersReport", prefix="Caers",
@@ -301,7 +305,7 @@ def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None, from_zi
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     n = skipped = seen_dup = 0
-    seen = set()
+    occ = {}                                            # IRI -> copies seen so far
     opener = (lambda p: gzip.open(p, "wt", encoding="utf-8", newline="\n", compresslevel=6)) \
         if str(out_path).endswith(".gz") else \
         (lambda p: open(p, "w", encoding="utf-8", newline="\n", buffering=1 << 20))
@@ -324,9 +328,12 @@ def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None, from_zi
                             except (KeyError, ValueError, TypeError):
                                 skipped += 1
                                 continue
-                            if iri in seen:          # same key twice in one source
+                            k = occ.get(iri, 0) + 1     # same key twice in one source
+                            occ[iri] = k
+                            if k > 1:
                                 seen_dup += 1
-                            seen.add(iri)
+                                if cfg.get("split_repeats"):
+                                    iri = f"{iri}-{k}"
                             extra = [("rdfs:label", common.lit(cfg["label"](rec)))]
                             extra += cfg["links"](rec)
                             field = SEARCH_FIELD.get(endpoint)

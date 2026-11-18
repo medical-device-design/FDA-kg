@@ -163,10 +163,14 @@ def _emit(buf, iri, pairs, st):
 
 
 # ---- FAERS ------------------------------------------------------------------------------
+_R = "\x00R\x00"          # stands for the report IRI until the parent numbers the copies
+
+
 def _faers_zip(args):
+    """Per report: (report IRI, link blocks with _R in place of the IRI), in file order."""
     zpath, limit = args
     import ijson
-    buf, st = io.StringIO(), Stats()
+    recs, st = [], Stats()
     n = 0
     with zipfile.ZipFile(zpath) as zf:
         for name in sorted(zf.namelist()):
@@ -179,19 +183,21 @@ def _faers_zip(args):
                         elif event == "end_map":
                             if rid is not None:
                                 riri = fda_iri.drug_event_report(rid)
+                                buf = io.StringIO()
                                 for i, t in terms:
                                     st.strings[norm(t)] += 1
                                     hit = _D.lookup(t)
                                     if hit:
                                         st.level[hit[2]] += 1
-                                        _emit(buf, f"{riri}/patient/reaction/{i}", pairs_for(hit), st)
+                                        _emit(buf, f"{_R}/patient/reaction/{i}", pairs_for(hit), st)
                                     else:
                                         st.unmapped[str(t).strip()] += 1
+                                recs.append((riri, buf.getvalue()))
                                 for v in versions:
                                     st.versions[str(v)] += 1
                                 n += 1
                                 if limit and n >= limit:
-                                    return buf.getvalue(), st
+                                    return recs, st
                     elif prefix == "results.item.safetyreportid":
                         rid = value
                     elif prefix == "results.item.patient.reaction.item":
@@ -201,7 +207,7 @@ def _faers_zip(args):
                         terms.append((idx, value))
                     elif prefix == "results.item.patient.reaction.item.reactionmeddraversionpt":
                         versions.append(value)
-    return buf.getvalue(), st
+    return recs, st
 
 
 def faers(release, snap, out, workers=4, limit=None):
@@ -210,8 +216,12 @@ def faers(release, snap, out, workers=4, limit=None):
     with gzip.open(out, "wt", encoding="utf-8", newline="\n", compresslevel=6) as fh:
         fh.write(common.prefixes({"ex": fda_iri.ns(E)}) + "\n")
         with Pool(workers, initializer=_init, initargs=(release,)) as pool:
-            for k, (text, s) in enumerate(pool.imap(_faers_zip, [(z, limit) for z in zips]), 1):
-                fh.write(text)
+            occ = {}                    # same copy numbering as l1_openfda_any.py (split_repeats)
+            for k, (recs, s) in enumerate(pool.imap(_faers_zip, [(z, limit) for z in zips]), 1):
+                for riri, text in recs:
+                    c = occ.get(riri, 0) + 1
+                    occ[riri] = c
+                    fh.write(text.replace(_R, riri if c == 1 else f"{riri}-{c}"))
                 st.add(s)
                 if k % 50 == 0 or k == len(zips):
                     print(f"  {k}/{len(zips)} partitions, {st.nodes} reactions linked", file=sys.stderr, flush=True)

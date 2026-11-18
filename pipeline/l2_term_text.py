@@ -35,8 +35,9 @@ F = "fda-food-cosmetic-kg"
 
 
 def _faers_zip(zpath):
+    """Reaction texts of one partition, as (report IRI, [(index, literal)]) in file order."""
     import ijson
-    buf, n = io.StringIO(), 0
+    recs = []
     with zipfile.ZipFile(zpath) as zf:
         for name in sorted(zf.namelist()):
             with zf.open(name) as fh:
@@ -46,19 +47,15 @@ def _faers_zip(zpath):
                         if event == "start_map":
                             rid, idx, terms = None, -1, []
                         elif event == "end_map" and rid is not None:
-                            riri = fda_iri.drug_event_report(rid)
-                            for i, t in terms:
-                                lit = common.lit(t)
-                                if lit:
-                                    buf.write(f"<{riri}/patient/reaction/{i}>\n    ex:reactionmeddrapt {lit} .\n\n")
-                                    n += 1
+                            lits = [(i, common.lit(t)) for i, t in terms]
+                            recs.append((fda_iri.drug_event_report(rid), [(i, x) for i, x in lits if x]))
                     elif prefix == "results.item.safetyreportid":
                         rid = value
                     elif prefix == "results.item.patient.reaction.item" and event == "start_map":
                         idx += 1
                     elif prefix == "results.item.patient.reaction.item.reactionmeddrapt":
                         terms.append((idx, value))
-    return buf.getvalue(), n
+    return recs
 
 
 def faers(snap, out, workers):
@@ -67,9 +64,16 @@ def faers(snap, out, workers):
     with gzip.open(out, "wt", encoding="utf-8", newline="\n", compresslevel=6) as fh:
         fh.write(common.prefixes({"ex": fda_iri.ns(E)}) + "\n")
         with Pool(workers) as pool:
-            for k, (text, n) in enumerate(pool.imap(_faers_zip, zips), 1):
-                fh.write(text)
-                total += n
+            occ = {}                    # same copy numbering as l1_openfda_any.py (split_repeats)
+            for k, recs in enumerate(pool.imap(_faers_zip, zips), 1):
+                for riri, lits in recs:
+                    c = occ.get(riri, 0) + 1
+                    occ[riri] = c
+                    if c > 1:
+                        riri = f"{riri}-{c}"
+                    for i, lit in lits:
+                        fh.write(f"<{riri}/patient/reaction/{i}>\n    ex:reactionmeddrapt {lit} .\n\n")
+                        total += 1
                 if k % 100 == 0 or k == len(zips):
                     print(f"  {k}/{len(zips)} partitions, {total} reaction texts", file=sys.stderr, flush=True)
     return total
