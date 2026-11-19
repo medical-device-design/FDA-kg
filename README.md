@@ -49,7 +49,7 @@ pipeline/   fda_iri.py (every IRI), mapper.py (record to Turtle), l1_*.py (sourc
             (MedDRA term text to PT/LLT code links), link_report.py (cross-graph link resolution),
             gen_shapes.py (SHACL), chunk_ttl.py (chunked or sampled validation), stream_check.py
             (full-coverage rule check for files too big for Jena), sample_ttl.py, xlsx_min.py.
-            common.py is copied unchanged from the medical-device-kg pipeline at build time.
+            common.py (literal, date and provenance helpers, shared with the medical-device-kg pipeline).
 shapes/     generated SHACL shapes, one file per graph
 queries/    SPARQL query battery (smoke tests for the joins)
 scripts/    build-VM helpers (bash). Paths use /srv/fda-products-kg; hosts are placeholders.
