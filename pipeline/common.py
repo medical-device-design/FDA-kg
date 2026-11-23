@@ -25,6 +25,10 @@ untyped string. Never silently downgrade a good date; never fabricate a bad one.
 import re
 from datetime import datetime
 
+import bmed_commons as bc   # master-owned helpers (bmedesign-kg commons, copied verbatim; never edit)
+
+CORE = bc.CORE
+
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 YYYYMMDD = re.compile(r"^\d{8}$")
 
@@ -48,7 +52,7 @@ def lit(value):
     """Plain string literal, or None if blank (None objects are skipped later)."""
     if value is None:
         return None
-    s = str(value).strip()
+    s = bc.scrub_text(str(value).strip())
     return f'"{esc(s)}"' if s else None
 
 
@@ -56,7 +60,7 @@ def lang_lit(value, lang="en"):
     """Language-tagged string literal (for human-readable text where it helps)."""
     if value is None:
         return None
-    s = str(value).strip()
+    s = bc.scrub_text(str(value).strip())
     return f'"{esc(s)}"@{lang}' if s else None
 
 
@@ -89,12 +93,8 @@ def float_lit(value):
     """Decimal measurement (storage temperature, quantities). xsd:decimal."""
     if value is None or str(value).strip() == "":
         return None
-    try:
-        f = float(str(value).strip())
-    except (ValueError, TypeError):
-        return None
-    # canonical, no exponent, no trailing noise
-    return f'"{f:g}"^^xsd:decimal'
+    d = bc.plain_decimal(value)          # plain notation, never exponent form (master ruling, November 22, 2026)
+    return f'"{d}"^^xsd:decimal' if d is not None else None
 
 
 def _valid_date(y, m, d):
@@ -107,28 +107,19 @@ def _valid_date(y, m, d):
 
 def date_lit(value):
     """
-    Emit xsd:date for a real calendar date, whether it arrives ISO (2016-09-12)
-    or as 8 digits (20160912). Anything that is not a real date is preserved as
-    an untyped string (see the module docstring on why). Returns None if blank.
+    Typed date via the master commons: YYYY -> xsd:gYear, YYYY-MM (or YYYYMM) -> xsd:gYearMonth,
+    a real calendar date (ISO, YYYYMMDD, MM/DD/YYYY) -> xsd:date. Anything that is not a real date
+    is kept as an untyped string with its source text. Returns None if blank.
     """
     if value is None:
         return None
     s = str(value).strip()
     if not s:
         return None
-
-    if ISO_DATE.match(s):
-        y, m, d = s[0:4], s[5:7], s[8:10]
-        return f'"{s}"^^xsd:date' if _valid_date(y, m, d) else f'"{esc(s)}"'
-
-    if YYYYMMDD.match(s):
-        y, m, d = s[0:4], s[4:6], s[6:8]
-        if _valid_date(y, m, d):
-            return f'"{y}-{m}-{d}"^^xsd:date'
-        return f'"{esc(s)}"'          # e.g. "20169999" -- keep, don't fake a date
-
-    # some other shape -- keep verbatim as a string, never guess
-    return f'"{esc(s)}"'
+    lexical, dtype = bc.typed_date(s)
+    if dtype:
+        return f'"{lexical}"^^xsd:{dtype.rsplit("#", 1)[1]}'
+    return f'"{esc(bc.scrub_text(lexical))}"'
 
 
 # ---------------------------------------------------------------------------
@@ -150,22 +141,28 @@ def as_list(value):
 # ---------------------------------------------------------------------------
 def provenance(dataset, record_id, source_url=None, retrieved_at=None):
     """
-    Return the standard provenance (predicate, object) pairs, in a FIXED order,
-    skipping any that are absent. Emits only what is supplied, so a converter can
-    adopt this without changing its output until it also passes retrieved_at.
+    The core provenance block (core:sourceDataset, core:retrievedAt, core:sourceRecordId,
+    core:sourceUrl) from the master commons, as (predicate, object) pairs. v0.0.2: the ex:
+    versions are dropped (master ruling, November 22, 2026).
 
     retrieved_at MUST come from the fetch manifest (the download date), NEVER
     datetime.now() -- otherwise the output stops being reproducible.
     """
-    pairs = [
-        ("ex:sourceDataset", lit(dataset)),
-        ("ex:sourceRecordId", lit(record_id)),
-    ]
-    if source_url is not None:
-        pairs.append(("ex:sourceUrl", lit(source_url)))
-    if retrieved_at is not None:
-        pairs.append(("ex:retrievedAt", date_lit(retrieved_at)))
-    return pairs
+    if retrieved_at is None:
+        pairs = [(f"<{CORE}sourceDataset>", lit(dataset)), (f"<{CORE}sourceRecordId>", lit(record_id))]
+        if source_url is not None:
+            pairs.append((f"<{CORE}sourceUrl>", f'"{esc(source_url)}"^^xsd:anyURI'))
+        return pairs
+    out = []
+    for pred, lexical, dtype in bc.prov(dataset, date_lit(retrieved_at).split('"')[1], record_id, source_url):
+        obj = f'"{esc(lexical)}"' + (f"^^xsd:{dtype.rsplit('#', 1)[1]}" if dtype else "")
+        out.append((f"<{pred}>", obj))
+    return out
+
+
+def core_id(name, value):
+    """(predicate, literal) for a core identifier property, e.g. core_id("faersReportId", "10003300")."""
+    return (f"<{CORE}{name}>", lit(value))
 
 
 # ---------------------------------------------------------------------------
@@ -237,14 +234,23 @@ def _selftest():
     assert as_list("a; b ;;c") == ["a", "b", "c"]
     assert as_list(None) == []
     # --- provenance: only what's supplied, fixed order --------------------
+    C = f"<{CORE}"
     p = provenance("device/udi", "REC1", source_url="http://x/REC1")
     assert p == [
-        ("ex:sourceDataset", '"device/udi"'),
-        ("ex:sourceRecordId", '"REC1"'),
-        ("ex:sourceUrl", '"http://x/REC1"'),
+        (C + "sourceDataset>", '"device/udi"'),
+        (C + "sourceRecordId>", '"REC1"'),
+        (C + "sourceUrl>", '"http://x/REC1"^^xsd:anyURI'),
     ], p
     p2 = provenance("device/recall", "94520", retrieved_at="20261002")
-    assert ("ex:retrievedAt", '"2026-10-02"^^xsd:date') in p2
+    assert (C + "retrievedAt>", '"2026-10-02"^^xsd:date') in p2
+    assert (C + "sourceRecordId>", '"94520"') in p2
+    # --- v0.0.2 literal rules (master commons) ------------------------------
+    assert float_lit("1000000") == '"1000000"^^xsd:decimal'
+    assert float_lit("0.00001") == '"0.00001"^^xsd:decimal'
+    assert date_lit("2016") == '"2016"^^xsd:gYear'
+    assert date_lit("201603") == '"2016-03"^^xsd:gYearMonth'
+    assert lit("call x.y@example.com now") == '"call [EMAIL REMOVED] now"'
+    assert core_id("faersReportId", "10003300") == (C + "faersReportId>", '"10003300"')
 
     # --- write_block: skips None, closes with a period --------------------
     import io

@@ -212,6 +212,7 @@ ENDPOINTS = {
         rec_id=lambda r: str(r["safetyreportid"]),
         dates={"receivedate", "receiptdate", "transmissiondate", "drugstartdate", "drugenddate", "patientdeathdate"},
         links=_faers_links,
+        ids=lambda r: [common.core_id("faersReportId", str(r["safetyreportid"]).strip())],   # core identifier on the owner node (v0.0.2)
         licensed=lambda r: _strip(r, ("patient", "reaction", "reactionmeddrapt")),   # MedDRA PT text; codes and outcome kept
         # openFDA serves 1,811 old AERS report ids twice (two transmissions, no version number).
         # Each copy keeps its own node: the n-th copy in sorted partition order is report/<id>-n
@@ -336,6 +337,7 @@ def convert(endpoint, snapshot_dir, out_path, publish=False, limit=None, from_zi
                                     iri = f"{iri}-{k}"
                             extra = [("rdfs:label", common.lit(cfg["label"](rec)))]
                             extra += cfg["links"](rec)
+                            extra += cfg["ids"](rec) if cfg.get("ids") else []
                             field = SEARCH_FIELD.get(endpoint)
                             url = (SOURCE_URL.format(ep=endpoint, field=field, val=quote(str(rec_id)))
                                    if field and rec_id else f"https://api.fda.gov/{endpoint}.json")

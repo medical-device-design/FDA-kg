@@ -104,6 +104,7 @@ def convert(snap, out_path, publish):
                         if kind == "DATA":
                             pairs = [("a", "ex:VaersReport")] + pairs_for(row)
                             pairs.append(("rdfs:label", common.lit(f"VAERS report {vid}")))
+                            pairs.append(common.core_id("vaersId", vid))      # core identifier on the owner node (v0.0.2)
                             pairs += common.provenance(dataset, vid, source_url=SRC, retrieved_at=stamp)
                             counts["triples"] += common.write_block(fh, f"<{riri}>", pairs)
                             counts["reports"] += 1

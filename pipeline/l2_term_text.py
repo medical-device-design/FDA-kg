@@ -8,7 +8,7 @@ publishes it may be republished (codes and hierarchy may not). This pass reads t
 raw snapshots again and writes it as a separate public file per source, attached to the same
 nodes the L1 files declare, so nothing large is rebuilt:
 
-  faers    <report/<id>/patient/reaction/<i>>  ex:reactionmeddrapt "text"      (62 M reactions)
+  faers    <report/<id>/patient/reaction/<i>>  ex:reactionpttext "text"      (62 M reactions)
   vaers    <vaers-report/<id>/symptoms/<n>>     ex:symptom1 .. ex:symptom5 "text"
   caers    <caers-report/<n>>                   ex:reactions "text" (one per reaction)
   cosmetic <cosmetic-event/<n>>                 ex:reactions "text"
@@ -72,7 +72,7 @@ def faers(snap, out, workers):
                     if c > 1:
                         riri = f"{riri}-{c}"
                     for i, lit in lits:
-                        fh.write(f"<{riri}/patient/reaction/{i}>\n    ex:reactionmeddrapt {lit} .\n\n")
+                        fh.write(f"<{riri}/patient/reaction/{i}>\n    ex:reactionpttext {lit} .\n\n")
                         total += 1
                 if k % 100 == 0 or k == len(zips):
                     print(f"  {k}/{len(zips)} partitions, {total} reaction texts", file=sys.stderr, flush=True)

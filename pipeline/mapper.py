@@ -25,6 +25,11 @@ import common
 import fda_iri
 
 RAW_TEXT_KEYS = {"molfile"}            # whitespace is meaningful, never strip
+# v0.0.2 renames (bmedesign-kg ruling 2026-11-22-fda-products-v0.0.2, item 1): openFDA field names that
+# contain "meddra" carry only the permitted preferred-term text or its version, never a MedDRA code.
+# The old names are declared owl:deprecated in the graph's ontology.ttl.
+RENAME = {"reactionmeddrapt": "reactionpttext", "reactionmeddraversionpt": "reactionptversion",
+          "drugrecuractionmeddraversion": "drugrecuractionptversion", "meddra_version": "pt_version"}
 _US_DATE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 
 
@@ -64,7 +69,7 @@ def words(key):
 
 
 def camel(key):
-    w = words(key)
+    w = words(RENAME.get(key, key))
     return w[0] + "".join(x.capitalize() for x in w[1:])
 
 
@@ -83,7 +88,8 @@ def scalar(key, v, date_fields=frozenset()):
     if isinstance(v, int):
         return f'"{v}"^^xsd:integer'
     if isinstance(v, Decimal):
-        return f'"{format(v, "f")}"^^xsd:decimal'
+        d = common.bc.plain_decimal(v)
+        return f'"{d}"^^xsd:decimal' if d is not None else None
     if isinstance(v, float):
         return f'"{repr(v)}"^^xsd:double'
     if v is None:
@@ -91,7 +97,7 @@ def scalar(key, v, date_fields=frozenset()):
     if key in date_fields:
         return date_lit(v)
     if key in RAW_TEXT_KEYS:
-        s = str(v)
+        s = common.bc.scrub_text(str(v))
         return f'"{common.esc(s)}"' if s.strip() else None
     return common.lit(v)
 
@@ -191,6 +197,9 @@ def _selftest():
     assert 'ex:tags "a" ;\n    ex:tags "b"' in t
     assert t.rstrip().endswith('rdfs:label "A1" .')
     assert m.nodes == 4
+    assert camel("reactionmeddrapt") == "reactionpttext" and camel("reactionmeddraversionpt") == "reactionptversion"
+    assert camel("drugrecuractionmeddraversion") == "drugrecuractionptversion"
+    assert scalar("x", Decimal("1E+6")) == '"1000000"^^xsd:decimal'
     print(f"mapper.py self-test PASSED ({m.triples} triples, {m.nodes} nodes).")
 
 
